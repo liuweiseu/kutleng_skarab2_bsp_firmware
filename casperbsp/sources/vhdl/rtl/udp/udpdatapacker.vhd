@@ -323,38 +323,41 @@ architecture rtl of udpdatapacker is
             probe_out2 : out STD_LOGIC_VECTOR(3 downto 0)
         );
     end component vio_packer;
-    component ila_datapacker is
-        Port(
-            clk    : in STD_LOGIC;
-            probe0 : in STD_LOGIC_VECTOR(511 downto 0);
-            probe1 : in STD_LOGIC_VECTOR(63 downto 0);
-            probe2 : in STD_LOGIC_VECTOR(4 downto 0);
-            probe3 : in STD_LOGIC_VECTOR(3 downto 0);
-            probe4 : in STD_LOGIC_VECTOR(0 to 0);
-            probe5 : in STD_LOGIC_VECTOR(0 to 0);
-            probe6 : in STD_LOGIC_VECTOR(0 to 0)
-        );
+--    component ila_datapacker is
+--        Port(
+--            clk    : in STD_LOGIC;
+--            probe0 : in STD_LOGIC_VECTOR(511 downto 0);
+--            probe1 : in STD_LOGIC_VECTOR(63 downto 0);
+--            probe2 : in STD_LOGIC_VECTOR(4 downto 0);
+--            probe3 : in STD_LOGIC_VECTOR(3 downto 0);
+--            probe4 : in STD_LOGIC_VECTOR(0 to 0);
+--            probe5 : in STD_LOGIC_VECTOR(0 to 0);
+--            probe6 : in STD_LOGIC_VECTOR(0 to 0)
+--        );
 
-    end component ila_datapacker;
+--    end component ila_datapacker;
 begin
-    ILAPACKERi : ila_datapacker
-        port map(
-            clk       => axis_app_clk,
-            probe0    => lPacketData,
-            probe1    => lPacketByteEnable,
-            probe2    => std_logic_vector(lPacketAddress),
-            probe3    => std_logic_vector(lDPacketSlotID),
-            probe4(0) => lPacketDataWrite,
-            probe5(0) => lPacketSlotSet,
-            probe6(0) => lPacketSlotStatus
-        );
-    VIOPACKi : vio_packer
-        port map(
-            clk           => axis_clk,
-            probe_out0(0) => ClearDisable,
-            probe_out1(0) => UseFixedSlotID,
-            probe_out2    => FixedSlotID
-        );
+--    ILAPACKERi : ila_datapacker
+--        port map(
+--            clk       => axis_app_clk,
+--            probe0    => lPacketData,
+--            probe1    => lPacketByteEnable,
+--            probe2    => std_logic_vector(lPacketAddress),
+--            probe3    => std_logic_vector(lDPacketSlotID),
+--            probe4(0) => lPacketDataWrite,
+--            probe5(0) => lPacketSlotSet,
+--            probe6(0) => lPacketSlotStatus
+--        );
+--    VIOPACKi : vio_packer
+--        port map(
+--            clk           => axis_clk,
+--            probe_out0(0) => ClearDisable,
+--            probe_out1(0) => UseFixedSlotID,
+--            probe_out2    => FixedSlotID
+--        );
+    ClearDisable <= '0';
+    UseFixedSlotID <= '0';
+    FixedSlotID <= "0000";
     lClear <= '0' when (ClearDisable = '1') else SenderRingBufferSlotClear;
 
     lSlotID <= FixedSlotID when (UseFixedSlotID = '1') else SenderRingBufferSlotID;

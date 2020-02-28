@@ -309,26 +309,26 @@ architecture rtl of udpstreamingapp is
     signal UDPTXRingBufferData           : STD_LOGIC_VECTOR(511 downto 0);
     signal UDPTXRingBufferAddress        : STD_LOGIC_VECTOR(G_ADDR_WIDTH - 1 downto 0);
 
-    component axis_ila_server is
-        port(
-            clk     : IN STD_LOGIC;
-            probe0  : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
-            probe1  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-            probe2  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-            probe3  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-            probe4  : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
-            probe5  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-            probe6  : IN STD_LOGIC_VECTOR(63 DOWNTO 0);
-            probe7  : IN STD_LOGIC_VECTOR(511 DOWNTO 0);
-            probe8  : IN STD_LOGIC_VECTOR(4 DOWNTO 0);
-            probe9  : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
-            probe10 : IN STD_LOGIC_VECTOR(511 DOWNTO 0);
-            probe11 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-            probe12 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-            probe13 : IN STD_LOGIC_VECTOR(63 DOWNTO 0);
-            probe14 : IN STD_LOGIC_VECTOR(0 DOWNTO 0)
-        );
-    end component axis_ila_server;
+--    component axis_ila_server is
+--        port(
+--            clk     : IN STD_LOGIC;
+--            probe0  : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
+--            probe1  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+--            probe2  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+--            probe3  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+--            probe4  : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
+--            probe5  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+--            probe6  : IN STD_LOGIC_VECTOR(63 DOWNTO 0);
+--            probe7  : IN STD_LOGIC_VECTOR(511 DOWNTO 0);
+--            probe8  : IN STD_LOGIC_VECTOR(4 DOWNTO 0);
+--            probe9  : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
+--            probe10 : IN STD_LOGIC_VECTOR(511 DOWNTO 0);
+--            probe11 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+--            probe12 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+--            probe13 : IN STD_LOGIC_VECTOR(63 DOWNTO 0);
+--            probe14 : IN STD_LOGIC_VECTOR(0 DOWNTO 0)
+--        );
+--    end component axis_ila_server;
 
     signal laxis_tx_tpriority : STD_LOGIC_VECTOR(G_SLOT_WIDTH - 1 downto 0);
     signal laxis_tx_tdata     : STD_LOGIC_VECTOR(G_AXIS_DATA_WIDTH - 1 downto 0);
@@ -421,25 +421,25 @@ begin
             axis_tlast                     => axis_streaming_data_tx_tlast
         );
 
-    ILAUDPSERVER_i : axis_ila_server
-        port map(
-            clk        => axis_clk,
-            probe0     => UDPTXRingBufferSlotID,
-            probe1(0)  => UDPTXRingBufferSlotClear,
-            probe2(0)  => UDPTXRingBufferSlotStatus,
-            probe3(0)  => UDPTXRingBufferSlotTypeStatus,
-            probe4     => UDPTXRingBufferSlotsFilled,
-            probe5(0)  => UDPTXRingBufferDataRead,
-            probe6     => UDPTXRingBufferDataEnable,
-            probe7     => UDPTXRingBufferData,
-            probe8     => UDPTXRingBufferAddress,
-            probe9     => laxis_tx_tpriority,
-            probe10    => laxis_tx_tdata,
-            probe11(0) => laxis_tx_tvalid,
-            probe12(0) => axis_tx_tready,
-            probe13    => laxis_tx_tkeep,
-            probe14(0) => laxis_tx_tlast
-        );
+--    ILAUDPSERVER_i : axis_ila_server
+--        port map(
+--            clk        => axis_clk,
+--            probe0     => UDPTXRingBufferSlotID,
+--            probe1(0)  => UDPTXRingBufferSlotClear,
+--            probe2(0)  => UDPTXRingBufferSlotStatus,
+--            probe3(0)  => UDPTXRingBufferSlotTypeStatus,
+--            probe4     => UDPTXRingBufferSlotsFilled,
+--            probe5(0)  => UDPTXRingBufferDataRead,
+--            probe6     => UDPTXRingBufferDataEnable,
+--            probe7     => UDPTXRingBufferData,
+--            probe8     => UDPTXRingBufferAddress,
+--            probe9     => laxis_tx_tpriority,
+--            probe10    => laxis_tx_tdata,
+--            probe11(0) => laxis_tx_tvalid,
+--            probe12(0) => axis_tx_tready,
+--            probe13    => laxis_tx_tkeep,
+--            probe14(0) => laxis_tx_tlast
+--        );
 
     UDPDATAApp_i : macifudpserver
         generic map(
