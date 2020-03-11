@@ -71,7 +71,9 @@ entity casper100gethernetblock_no_cpu is
         -- Streaming data size (must be 512)
         G_AXIS_DATA_WIDTH            : natural              := 512;
         -- Number of UDP Streaming Data Server Modules 
-        G_NUM_STREAMING_DATA_SERVERS : natural range 1 to 4 := 1
+        G_NUM_STREAMING_DATA_SERVERS : natural range 1 to 4 := 1;
+        -- Number of slots in circular buffers (2^?)
+        G_SLOT_WIDTH                 : natural              := 2
     );
     port(
         -- 100MHz reference clock needed by 100G Ethernet PHY
@@ -142,7 +144,6 @@ architecture rtl of casper100gethernetblock_no_cpu is
     constant C_ARP_CACHE_ASIZE          : natural                          := 10;
     constant C_CPU_TX_DATA_BUFFER_ASIZE : natural                          := 11;
     constant C_CPU_RX_DATA_BUFFER_ASIZE : natural                          := 11;
-    constant C_SLOT_WIDTH               : natural                          := 4;
     constant C_ARP_DATA_WIDTH           : natural                          := 32;
 
     component udpipinterfacepr is
@@ -390,27 +391,27 @@ architecture rtl of casper100gethernetblock_no_cpu is
     -- Remove these for production designs                                    --
     -- They are only here for debug purposes                                  --
     ----------------------------------------------------------------------------
-    component axisila is
-        port(
-            clk     : IN STD_LOGIC;
-            probe0  : IN STD_LOGIC_VECTOR(511 DOWNTO 0);
-            probe1  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-            probe2  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-            probe3  : IN STD_LOGIC_VECTOR(63 DOWNTO 0);
-            probe4  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-            probe5  : IN STD_LOGIC_VECTOR(511 DOWNTO 0);
-            probe6  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-            probe7  : IN STD_LOGIC_VECTOR(63 DOWNTO 0);
-            probe8  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-            probe9  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-            probe10 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-            probe11 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-            probe12 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-            probe13 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-            probe14 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-            probe15 : IN STD_LOGIC_VECTOR(0 DOWNTO 0)
-        );
-    end component axisila;
+    --component axisila is
+    --    port(
+    --        clk     : IN STD_LOGIC;
+    --        probe0  : IN STD_LOGIC_VECTOR(511 DOWNTO 0);
+    --        probe1  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+    --        probe2  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+    --        probe3  : IN STD_LOGIC_VECTOR(63 DOWNTO 0);
+    --        probe4  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+    --        probe5  : IN STD_LOGIC_VECTOR(511 DOWNTO 0);
+    --        probe6  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+    --        probe7  : IN STD_LOGIC_VECTOR(63 DOWNTO 0);
+    --        probe8  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+    --        probe9  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+    --        probe10 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+    --        probe11 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+    --        probe12 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+    --        probe13 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+    --        probe14 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+    --        probe15 : IN STD_LOGIC_VECTOR(0 DOWNTO 0)
+    --    );
+    --end component axisila;
 
     signal Reset          : std_logic;
     signal lbus_tx_ovfout : std_logic;
@@ -478,18 +479,18 @@ architecture rtl of casper100gethernetblock_no_cpu is
     signal gmac_tx_data_read_byte_enable          : STD_LOGIC_VECTOR(1 downto 0);
     signal gmac_tx_data_write_address             : STD_LOGIC_VECTOR(C_CPU_TX_DATA_BUFFER_ASIZE - 1 downto 0);
     signal gmac_tx_data_read_address              : STD_LOGIC_VECTOR(C_CPU_TX_DATA_BUFFER_ASIZE - 1 downto 0);
-    signal gmac_tx_ringbuffer_slot_id             : STD_LOGIC_VECTOR(C_SLOT_WIDTH - 1 downto 0);
+    signal gmac_tx_ringbuffer_slot_id             : STD_LOGIC_VECTOR(G_SLOT_WIDTH - 1 downto 0);
     signal gmac_tx_ringbuffer_slot_set            : STD_LOGIC;
     signal gmac_tx_ringbuffer_slot_status         : STD_LOGIC;
-    signal gmac_tx_ringbuffer_number_slots_filled : STD_LOGIC_VECTOR(C_SLOT_WIDTH - 1 downto 0);
+    signal gmac_tx_ringbuffer_number_slots_filled : STD_LOGIC_VECTOR(G_SLOT_WIDTH - 1 downto 0);
     signal gmac_rx_data_read_enable               : STD_LOGIC;
     signal gmac_rx_data_read_data                 : STD_LOGIC_VECTOR(7 downto 0);
     signal gmac_rx_data_read_byte_enable          : STD_LOGIC_VECTOR(1 downto 0);
     signal gmac_rx_data_read_address              : STD_LOGIC_VECTOR(C_CPU_RX_DATA_BUFFER_ASIZE - 1 downto 0);
-    signal gmac_rx_ringbuffer_slot_id             : STD_LOGIC_VECTOR(C_SLOT_WIDTH - 1 downto 0);
+    signal gmac_rx_ringbuffer_slot_id             : STD_LOGIC_VECTOR(G_SLOT_WIDTH - 1 downto 0);
     signal gmac_rx_ringbuffer_slot_clear          : STD_LOGIC;
     signal gmac_rx_ringbuffer_slot_status         : STD_LOGIC;
-    signal gmac_rx_ringbuffer_number_slots_filled : STD_LOGIC_VECTOR(C_SLOT_WIDTH - 1 downto 0);
+    signal gmac_rx_ringbuffer_number_slots_filled : STD_LOGIC_VECTOR(G_SLOT_WIDTH - 1 downto 0);
 
     signal udp_gmac_reg_core_type           : STD_LOGIC_VECTOR(31 downto 0);
     signal udp_gmac_reg_phy_status_h        : STD_LOGIC_VECTOR(31 downto 0);
@@ -592,7 +593,7 @@ begin
         generic map(
             G_INCLUDE_ICAP               => G_INCLUDE_ICAP,
             G_AXIS_DATA_WIDTH            => G_AXIS_DATA_WIDTH,
-            G_SLOT_WIDTH                 => C_SLOT_WIDTH,
+            G_SLOT_WIDTH                 => G_SLOT_WIDTH,
             -- Number of UDP Streaming Data Server Modules 
             G_NUM_STREAMING_DATA_SERVERS => G_NUM_STREAMING_DATA_SERVERS,
             G_ARP_CACHE_ASIZE            => C_ARP_CACHE_ASIZE,
@@ -713,26 +714,26 @@ begin
             axis_rx_tlast                                => axis_rx_tlast
         );
 
-    MAINAXIS_i : axisila
-        port map(
-            clk        => ClkQSFP,
-            probe0     => axis_rx_tdata,
-            probe1(0)  => axis_rx_tvalid,
-            probe2(0)  => axis_rx_tuser,
-            probe3     => axis_rx_tkeep,
-            probe4(0)  => axis_rx_tlast,
-            probe5     => axis_tx_tdata,
-            probe6(0)  => axis_tx_tvalid,
-            probe7     => axis_tx_tkeep,
-            probe8(0)  => axis_tx_tlast,
-            probe9(0)  => axis_tx_tready,
-            probe10(0) => udp_gmac_reg_mac_enable,
-            probe11(0) => lbus_tx_ovfout,
-            probe12(0) => lbus_tx_unfout,
-            probe13(0) => RefClkLocked,
-            probe14(0) => Reset,
-            probe15(0) => qsfp_intl_ls
-        );
+    --MAINAXIS_i : axisila
+    --    port map(
+    --        clk        => ClkQSFP,
+    --        probe0     => axis_rx_tdata,
+    --        probe1(0)  => axis_rx_tvalid,
+    --        probe2(0)  => axis_rx_tuser,
+    --        probe3     => axis_rx_tkeep,
+    --        probe4(0)  => axis_rx_tlast,
+    --        probe5     => axis_tx_tdata,
+    --        probe6(0)  => axis_tx_tvalid,
+    --        probe7     => axis_tx_tkeep,
+    --        probe8(0)  => axis_tx_tlast,
+    --        probe9(0)  => axis_tx_tready,
+    --        probe10(0) => udp_gmac_reg_mac_enable,
+    --        probe11(0) => lbus_tx_ovfout,
+    --        probe12(0) => lbus_tx_unfout,
+    --        probe13(0) => RefClkLocked,
+    --        probe14(0) => Reset,
+    --        probe15(0) => qsfp_intl_ls
+    --    );
 
 end architecture rtl;
 

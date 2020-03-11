@@ -109,7 +109,7 @@ entity macifudpserver is
         SenderRingBufferAddress        : out STD_LOGIC_VECTOR(G_ADDR_WIDTH - 1 downto 0);
         --Inputs from AXIS bus of the MAC side
         --Outputs to AXIS bus MAC side 
-        axis_tx_tpriority              : out STD_LOGIC_VECTOR(3 downto 0);
+        axis_tx_tpriority              : out STD_LOGIC_VECTOR(G_SLOT_WIDTH - 1 downto 0);
         axis_tx_tdata                  : out STD_LOGIC_VECTOR(511 downto 0);
         axis_tx_tvalid                 : out STD_LOGIC;
         axis_tx_tready                 : in  STD_LOGIC;
