@@ -60,6 +60,9 @@ use ieee.std_logic_1164.all;
 
 entity mac100gphy is
     generic(
+        FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);
+        FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
+        FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0);
         C_MAC_INSTANCE             : natural range 0 to 1 := 0;
         C_COURSE_PACKET_THROTTLING : boolean              := false
     );
@@ -121,12 +124,23 @@ entity mac100gphy is
         axis_tx_tkeep                : out STD_LOGIC_VECTOR(63 downto 0);
         axis_tx_tlast                : out STD_LOGIC;
         -- User signal for errors and dropping of packets
-        axis_tx_tuser                : out STD_LOGIC
+        axis_tx_tuser                : out STD_LOGIC;
+
+        yellow_block_user_clk    : in STD_LOGIC;
+        yellow_block_rx_data     : out  STD_LOGIC_VECTOR(511 downto 0);
+        yellow_block_rx_valid    : out  STD_LOGIC;
+        yellow_block_rx_eof      : out  STD_LOGIC;
+        yellow_block_rx_overrun  : out STD_LOGIC
     );
 end entity mac100gphy;
 
 architecture rtl of mac100gphy is
     component gmacqsfptop is
+    generic(
+        FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);
+        FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
+        FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0)
+    );
         port(
             -- Reference clock to generate 100MHz from
             Clk100MHz                    : in  STD_LOGIC;
@@ -185,7 +199,12 @@ architecture rtl of mac100gphy is
             axis_tx_tkeep                : out STD_LOGIC_VECTOR(63 downto 0);
             axis_tx_tlast                : out STD_LOGIC;
             -- User signal for errors and dropping of packets
-            axis_tx_tuser                : out STD_LOGIC
+            axis_tx_tuser                : out STD_LOGIC;
+            yellow_block_user_clk    : in STD_LOGIC;
+            yellow_block_rx_data     : out  STD_LOGIC_VECTOR(511 downto 0);
+            yellow_block_rx_valid    : out  STD_LOGIC;
+            yellow_block_rx_eof      : out  STD_LOGIC;
+            yellow_block_rx_overrun  : out STD_LOGIC
         );
     end component gmacqsfptop;
     component macaxisdecoupler is
@@ -357,6 +376,11 @@ begin
     assert C_MAC_INSTANCE > 1 report "Error bad C_MAC_INSTANCE = " & integer'image(C_MAC_INSTANCE) severity failure;
 
     CMAC0_i : gmacqsfptop
+        generic map(
+            FABRIC_MAC  => FABRIC_MAC,
+            FABRIC_IP   => FABRIC_IP,
+            FABRIC_PORT => FABRIC_PORT
+        )
         port map(
             Clk100MHz                    => Clk100MHz,
             Enable                       => Enable,
@@ -397,7 +421,12 @@ begin
             axis_tx_tvalid               => axis_tx_tvalid,
             axis_tx_tkeep                => axis_tx_tkeep,
             axis_tx_tlast                => axis_tx_tlast,
-            axis_tx_tuser                => axis_tx_tuser
+            axis_tx_tuser                => axis_tx_tuser,
+            yellow_block_user_clk        => yellow_block_user_clk,
+            yellow_block_rx_data         => yellow_block_rx_data,
+            yellow_block_rx_valid        => yellow_block_rx_valid,
+            yellow_block_rx_eof          => yellow_block_rx_eof,
+            yellow_block_rx_overrun      => yellow_block_rx_overrun
         );
 
 end architecture rtl;

@@ -63,6 +63,11 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity gmacqsfptop is
+    generic(
+        FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);
+        FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
+        FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0)
+    );
     port(
         -- Reference clock to generate 100MHz from
         Clk100MHz                    : in  STD_LOGIC;
@@ -118,7 +123,12 @@ entity gmacqsfptop is
         axis_tx_tkeep                : out STD_LOGIC_VECTOR(63 downto 0);
         axis_tx_tlast                : out STD_LOGIC;
         -- User signal for errors and dropping of packets
-        axis_tx_tuser                : out STD_LOGIC
+        axis_tx_tuser                : out STD_LOGIC;
+        yellow_block_user_clk    : in STD_LOGIC;
+        yellow_block_rx_data     : out  STD_LOGIC_VECTOR(511 downto 0);
+        yellow_block_rx_valid    : out  STD_LOGIC;
+        yellow_block_rx_eof      : out  STD_LOGIC;
+        yellow_block_rx_overrun  : out STD_LOGIC
     );
 end entity gmacqsfptop;
 
@@ -364,6 +374,34 @@ architecture rtl of gmacqsfptop is
         );
     end component EthMACPHY100GQSFP4x;
 
+    component yellow_block_100gbe_udp_rx is
+    generic(
+        FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);
+        FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
+        FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0)
+    );
+    port(
+        yellow_block_user_clk    : in  STD_LOGIC;
+        max_rx_axi_clk           : in  STD_LOGIC;
+        -- -- Setup information
+        -- yellow_block_mac       : in  STD_LOGIC_VECTOR(47 downto 0);
+        -- yellow_block_ip        : in  STD_LOGIC_VECTOR(31 downto 0);
+        -- yellow_block_port      : in  STD_LOGIC_VECTOR(15 downto 0);
+        --Inputs from AXIS bus of the MAC side
+        axis_rx_tdata            : in  STD_LOGIC_VECTOR(511 downto 0);
+        axis_rx_tvalid           : in  STD_LOGIC;
+        axis_rx_tuser            : in  STD_LOGIC;
+        axis_rx_tkeep            : in  STD_LOGIC_VECTOR(63 downto 0);
+        axis_rx_tlast            : in  STD_LOGIC;
+
+        yellow_block_rx_data     : out  STD_LOGIC_VECTOR(511 downto 0);
+        yellow_block_rx_valid    : out  STD_LOGIC;
+        yellow_block_rx_eof      : out  STD_LOGIC;
+        yellow_block_rx_overrun  : out STD_LOGIC
+
+    );
+end component  yellow_block_100gbe_udp_rx;
+
     signal lbus_rx_clk         : STD_LOGIC;
     signal lbus_tx_clk         : STD_LOGIC;
     signal lbus_rx_reset       : STD_LOGIC;
@@ -409,6 +447,14 @@ architecture rtl of gmacqsfptop is
     signal laxis_tx_tlast               : std_logic;
     signal laxis_tx_tvalid              : std_logic;
     signal laxis_tx_tuser               : std_logic;
+
+    signal gt_rxusrclk2                 : std_logic;
+    signal mac_rx_axis_rx_tdata         : std_logic_vector(511 downto 0);
+    signal mac_rx_axis_rx_tvalid        : std_logic;
+    signal mac_rx_axis_rx_tuser         : std_logic;
+    signal mac_rx_axis_rx_tkeep         : std_logic_vector(63 downto 0);
+    signal mac_rx_axis_rx_tlast         : std_logic;
+
     -- Set core type to CPU_TX/RX_Enable := Enable
     -- Core Revision := 1.0
     -- Core Type :=5 := 100GbE   
@@ -608,11 +654,11 @@ begin
             gt_ref_clk_p                   => mgt_qsfp_clock_p,
             gt_ref_clk_n                   => mgt_qsfp_clock_n,
             init_clk                       => Clk100MHz,
-            rx_axis_tvalid                 => laxis_tx_tvalid,
-            rx_axis_tdata                  => axis_tx_tdata,
-            rx_axis_tlast                  => laxis_tx_tlast,
-            rx_axis_tkeep                  => axis_tx_tkeep,
-            rx_axis_tuser                  => laxis_tx_tuser,
+            rx_axis_tvalid                 => mac_rx_axis_rx_tvalid,-- laxis_tx_tvalid,
+            rx_axis_tdata                  => mac_rx_axis_rx_tdata,--axis_tx_tdata,
+            rx_axis_tlast                  => mac_rx_axis_rx_tlast,--  laxis_tx_tlast,
+            rx_axis_tkeep                  => mac_rx_axis_rx_tkeep,-- axis_tx_tkeep,
+            rx_axis_tuser                  => mac_rx_axis_rx_tuser,-- laxis_tx_tuser,
             rx_otn_bip8_0                  => open,
             rx_otn_bip8_1                  => open,
             rx_otn_bip8_2                  => open,
@@ -728,8 +774,8 @@ begin
             ctl_rx_enable                  => Enable,
             ctl_rx_force_resync            => ctl_rx_force_resync,
             ctl_rx_test_pattern            => ctl_rx_test_pattern,
-            core_rx_reset                  => lbus_rx_reset,
-            rx_clk                         => lbus_rx_clk,
+            core_rx_reset                  => lbus_tx_reset,--lbus_rx_reset,
+            rx_clk                         => lbus_tx_clk,--lbus_rx_clk,
             stat_rx_received_local_fault   => open,
             stat_rx_remote_fault           => open,
             stat_rx_status                 => open,
@@ -817,5 +863,28 @@ begin
             drp_rdy                        => open,
             drp_we                         => drp_we
         );
+
+   yellow_block_100gbe_udp_rx_inst: yellow_block_100gbe_udp_rx
+   generic map(
+            FABRIC_MAC  => FABRIC_MAC,
+            FABRIC_IP   => FABRIC_IP,
+            FABRIC_PORT => FABRIC_PORT
+        )
+   port map(
+            -- MAC received data (packet in) for UDP checking and processing
+            max_rx_axi_clk          => lbus_tx_clk, -- = gt_txusrclk2
+            axis_rx_tdata           => mac_rx_axis_rx_tdata,
+            axis_rx_tvalid          => mac_rx_axis_rx_tvalid,
+            axis_rx_tuser           => mac_rx_axis_rx_tuser,
+            axis_rx_tkeep           => mac_rx_axis_rx_tkeep,
+            axis_rx_tlast           => mac_rx_axis_rx_tlast,
+
+            -- MAC received data (UDP Packet in) with UDP payload stripped and sent to yellow block 100G RX Data interface
+            yellow_block_user_clk     => yellow_block_user_clk,
+            yellow_block_rx_data      => yellow_block_rx_data,
+            yellow_block_rx_valid     => yellow_block_rx_valid,
+            yellow_block_rx_eof       => yellow_block_rx_eof,
+            yellow_block_rx_overrun   => yellow_block_rx_overrun
+    );
 
 end architecture rtl;

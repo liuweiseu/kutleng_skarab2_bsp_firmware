@@ -66,6 +66,9 @@ use ieee.std_logic_1164.all;
 
 entity casper100gethernetblock_no_cpu is
     generic(
+        FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);
+        FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
+        FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0);
         -- Boolean to include or not include ICAP for partial reconfiguration
         G_INCLUDE_ICAP               : boolean              := false;
         -- Streaming data size (must be 512)
@@ -117,13 +120,20 @@ entity casper100gethernetblock_no_cpu is
         axis_streaming_data_clk                     : in  STD_LOGIC_VECTOR(G_NUM_STREAMING_DATA_SERVERS - 1 downto 0);
         axis_streaming_data_rx_packet_length        : out STD_LOGIC_VECTOR((16 * G_NUM_STREAMING_DATA_SERVERS) - 1 downto 0);         
         
-        -- Streaming data outputs to AXIS of the Yellow Blocks
-        axis_streaming_data_rx_tdata                : out STD_LOGIC_VECTOR((G_AXIS_DATA_WIDTH * G_NUM_STREAMING_DATA_SERVERS) - 1 downto 0);
-        axis_streaming_data_rx_tvalid               : out STD_LOGIC_VECTOR(G_NUM_STREAMING_DATA_SERVERS - 1 downto 0);
-        axis_streaming_data_rx_tready               : in  STD_LOGIC_VECTOR(G_NUM_STREAMING_DATA_SERVERS - 1 downto 0);
-        axis_streaming_data_rx_tkeep                : out STD_LOGIC_VECTOR(((G_AXIS_DATA_WIDTH / 8) * G_NUM_STREAMING_DATA_SERVERS) - 1 downto 0);
-        axis_streaming_data_rx_tlast                : out STD_LOGIC_VECTOR(G_NUM_STREAMING_DATA_SERVERS - 1 downto 0);
-        axis_streaming_data_rx_tuser                : out STD_LOGIC_VECTOR(G_NUM_STREAMING_DATA_SERVERS - 1 downto 0);
+        -- -- Streaming data outputs to AXIS of the Yellow Blocks
+        -- axis_streaming_data_rx_tdata                : out STD_LOGIC_VECTOR((G_AXIS_DATA_WIDTH * G_NUM_STREAMING_DATA_SERVERS) - 1 downto 0);
+        -- axis_streaming_data_rx_tvalid               : out STD_LOGIC_VECTOR(G_NUM_STREAMING_DATA_SERVERS - 1 downto 0);
+        -- axis_streaming_data_rx_tready               : in  STD_LOGIC_VECTOR(G_NUM_STREAMING_DATA_SERVERS - 1 downto 0);
+        -- axis_streaming_data_rx_tkeep                : out STD_LOGIC_VECTOR(((G_AXIS_DATA_WIDTH / 8) * G_NUM_STREAMING_DATA_SERVERS) - 1 downto 0);
+        -- axis_streaming_data_rx_tlast                : out STD_LOGIC_VECTOR(G_NUM_STREAMING_DATA_SERVERS - 1 downto 0);
+        -- axis_streaming_data_rx_tuser                : out STD_LOGIC_VECTOR(G_NUM_STREAMING_DATA_SERVERS - 1 downto 0);
+
+        yellow_block_rx_data            : out  STD_LOGIC_VECTOR(511 downto 0);
+        yellow_block_rx_valid           : out  STD_LOGIC;
+        yellow_block_rx_eof             : out  STD_LOGIC;
+        yellow_block_rx_overrun         : out  STD_LOGIC;
+
+
         --Data inputs from AXIS bus of the Yellow Blocks
         axis_streaming_data_tx_destination_ip       : in  STD_LOGIC_VECTOR((32 * G_NUM_STREAMING_DATA_SERVERS) - 1 downto 0);
         axis_streaming_data_tx_destination_udp_port : in  STD_LOGIC_VECTOR((16 * G_NUM_STREAMING_DATA_SERVERS) - 1 downto 0);
@@ -322,6 +332,9 @@ architecture rtl of casper100gethernetblock_no_cpu is
 
     component mac100gphy is
         generic(
+            FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);
+            FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
+            FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0);
             C_MAC_INSTANCE : natural range 0 to 1 := 0
         );
         port(
@@ -381,7 +394,13 @@ architecture rtl of casper100gethernetblock_no_cpu is
             axis_tx_tkeep                : out STD_LOGIC_VECTOR(63 downto 0);
             axis_tx_tlast                : out STD_LOGIC;
             -- User signal for errors and dropping of packets
-            axis_tx_tuser                : out STD_LOGIC
+            axis_tx_tuser                : out STD_LOGIC;
+
+            yellow_block_user_clk    : in   STD_LOGIC;
+            yellow_block_rx_data     : out  STD_LOGIC_VECTOR(511 downto 0);
+            yellow_block_rx_valid    : out  STD_LOGIC;
+            yellow_block_rx_eof      : out  STD_LOGIC;
+            yellow_block_rx_overrun  : out  STD_LOGIC
         );
     end component mac100gphy;
 
@@ -532,6 +551,9 @@ begin
     ----------------------------------------------------------------------------
     GMAC_i : mac100gphy
         generic map(
+            FABRIC_MAC  => FABRIC_MAC,
+            FABRIC_IP   => FABRIC_IP,
+            FABRIC_PORT => FABRIC_PORT,
             C_MAC_INSTANCE => 0         -- Instantiate CMAC0 QSFP1
         )
         port map(
@@ -574,7 +596,12 @@ begin
             axis_tx_tvalid               => axis_rx_tvalid,
             axis_tx_tkeep                => axis_rx_tkeep,
             axis_tx_tlast                => axis_rx_tlast,
-            axis_tx_tuser                => axis_rx_tuser
+            axis_tx_tuser                => axis_rx_tuser,
+            yellow_block_user_clk     => axis_streaming_data_clk(0),
+            yellow_block_rx_data      => yellow_block_rx_data,
+            yellow_block_rx_valid     => yellow_block_rx_valid,
+            yellow_block_rx_eof       => yellow_block_rx_eof,
+            yellow_block_rx_overrun   => yellow_block_rx_overrun
         );
 
     ----------------------------------------------------------------------------
@@ -669,12 +696,12 @@ begin
             aximm_gmac_rx_ringbuffer_number_slots_filled => open, --gmac_rx_ringbuffer_number_slots_filled,
             axis_streaming_data_clk                      => axis_streaming_data_clk,
             axis_streaming_data_rx_packet_length         => axis_streaming_data_rx_packet_length,                 
-            axis_streaming_data_rx_tdata                 => axis_streaming_data_rx_tdata,
-            axis_streaming_data_rx_tvalid                => axis_streaming_data_rx_tvalid,
-            axis_streaming_data_rx_tready                => axis_streaming_data_rx_tready,
-            axis_streaming_data_rx_tkeep                 => axis_streaming_data_rx_tkeep,
-            axis_streaming_data_rx_tlast                 => axis_streaming_data_rx_tlast,
-            axis_streaming_data_rx_tuser                 => axis_streaming_data_rx_tuser,
+            axis_streaming_data_rx_tdata                 => open,--axis_streaming_data_rx_tdata,
+            axis_streaming_data_rx_tvalid                => open,--axis_streaming_data_rx_tvalid,
+            axis_streaming_data_rx_tready                => "",--axis_streaming_data_rx_tready,
+            axis_streaming_data_rx_tkeep                 => open,--axis_streaming_data_rx_tkeep,
+            axis_streaming_data_rx_tlast                 => open,--axis_streaming_data_rx_tlast,
+            axis_streaming_data_rx_tuser                 => open,--axis_streaming_data_rx_tuser,
             axis_streaming_data_tx_destination_ip        => axis_streaming_data_tx_destination_ip,
             axis_streaming_data_tx_destination_udp_port  => axis_streaming_data_tx_destination_udp_port,
             axis_streaming_data_tx_source_udp_port       => axis_streaming_data_tx_source_udp_port,
