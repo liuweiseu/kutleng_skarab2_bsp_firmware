@@ -170,7 +170,7 @@ begin
 
   -- Incomminf CMAC RX packet handling
   -- Check that the incomming frame matches our MAC, IP, UDP Port 
-  valid_udp_packet <= '1' when ((byteswap(lDestinationMACAddress) = FABRIC_MAC and byteswap(lDestinationIPAddress) = FABRIC_IP and byteswap(lDestinationUDPPort) = FABRIC_PORT and axis_rx_tvalid = '1')) else '0';
+  valid_udp_packet <= '1' when ((lProtocol = C_UDP_PROTOCOL and lIPVIHL = C_IPV_IHL and byteswap(lEtherType) = C_IPV4_TYPE and byteswap(lDestinationMACAddress) = FABRIC_MAC and byteswap(lDestinationIPAddress) = FABRIC_IP and byteswap(lDestinationUDPPort) = FABRIC_PORT and axis_rx_tvalid = '1')) else '0';
   
   -- if the packet matches all the critera then strip off the UDP payload, and realign it to 511:0 for 100 GbE yellow block RX_DATA
   pack_valid_udp_packet_into_fifo : process(max_rx_axi_clk)
