@@ -1,47 +1,4 @@
 --------------------------------------------------------------------------------
--- Legal & Copyright:   (c) 2018 Kutleng Engineering Technologies (Pty) Ltd    - 
---                                                                             -
--- This program is the proprietary software of Kutleng Engineering Technologies-
--- and/or its licensors, and may only be used, duplicated, modified or         -
--- distributed pursuant to the terms and conditions of a separate, written     -
--- license agreement executed between you and Kutleng (an "Authorized License")-
--- Except as set forth in an Authorized License, Kutleng grants no license     -
--- (express or implied), right to use, or waiver of any kind with respect to   -
--- the Software, and Kutleng expressly reserves all rights in and to the       -
--- Software and all intellectual property rights therein.  IF YOU HAVE NO      -
--- AUTHORIZED LICENSE, THEN YOU HAVE NO RIGHT TO USE THIS SOFTWARE IN ANY WAY, -
--- AND SHOULD IMMEDIATELY NOTIFY KUTLENG AND DISCONTINUE ALL USE OF THE        -
--- SOFTWARE.                                                                   -
---                                                                             -
--- Except as expressly set forth in the Authorized License,                    -
---                                                                             -
--- 1.     This program, including its structure, sequence and organization,    -
--- constitutes the valuable trade secrets of Kutleng, and you shall use all    -
--- reasonable efforts to protect the confidentiality thereof,and to use this   -
--- information only in connection with South African Radio Astronomy           -
--- Observatory (SARAO) products.                                               -
---                                                                             -
--- 2.     TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE SOFTWARE IS PROVIDED     -
--- "AS IS" AND WITH ALL FAULTS AND KUTLENG MAKES NO PROMISES, REPRESENTATIONS  -
--- OR WARRANTIES, EITHER EXPRESS, IMPLIED, STATUTORY, OR OTHERWISE, WITH       -
--- RESPECT TO THE SOFTWARE.  KUTLENG SPECIFICALLY DISCLAIMS ANY AND ALL IMPLIED-
--- WARRANTIES OF TITLE, MERCHANTABILITY, NONINFRINGEMENT, FITNESS FOR A        -
--- PARTICULAR PURPOSE, LACK OF VIRUSES, ACCURACY OR COMPLETENESS, QUIET        -
--- ENJOYMENT, QUIET POSSESSION OR CORRESPONDENCE TO DESCRIPTION. YOU ASSUME THE-
--- ENJOYMENT, QUIET POSSESSION USE OR PERFORMANCE OF THE SOFTWARE.             -
---                                                                             -
--- 3.     TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL KUTLENG OR -
--- ITS LICENSORS BE LIABLE FOR (i) CONSEQUENTIAL, INCIDENTAL, SPECIAL, INDIRECT-
--- , OR EXEMPLARY DAMAGES WHATSOEVER ARISING OUT OF OR IN ANY WAY RELATING TO  -
--- YOUR USE OF OR INABILITY TO USE THE SOFTWARE EVEN IF KUTLENG HAS BEEN       -
--- ADVISED OF THE POSSIBILITY OF SUCH DAMAGES; OR (ii) ANY AMOUNT IN EXCESS OF -
--- THE AMOUNT ACTUALLY PAID FOR THE SOFTWARE ITSELF OR ZAR R1, WHICHEVER IS    -
--- GREATER. THESE LIMITATIONS SHALL APPLY NOTWITHSTANDING ANY FAILURE OF       -
--- ESSENTIAL PURPOSE OF ANY LIMITED REMEDY.                                    -
--- --------------------------------------------------------------------------- -
--- THIS COPYRIGHT NOTICE AND DISCLAIMER MUST BE RETAINED AS                    -
--- PART OF THIS FILE AT ALL TIMES.                                             -
---=============================================================================-
 -- Company          : Kutleng Dynamic Electronics Systems (Pty) Ltd            -
 -- Engineer         : Benjamin Hector Hlophe                                   -
 --                                                                             -
@@ -186,7 +143,6 @@ architecture rtl of udpdatapacker is
     alias lUDPCheckSum                : std_logic_vector(15 downto 0) is lPacketData(335 downto 320);
     signal lIPHDRCheckSum             : unsigned(16 downto 0);
     signal iIPHeaderChecksum          : std_logic_vector(15 downto 0);
-    signal ServerMACAddress           : std_logic_vector(47 downto 0);
     signal lPreIPHDRCheckSum          : unsigned(17 downto 0);
     signal lServerMACAddress          : std_logic_vector(47 downto 0);
     signal lServerMACAddressChanged   : std_logic;
@@ -208,7 +164,6 @@ architecture rtl of udpdatapacker is
     signal lGatewayIPAddressChanged   : std_logic;
     signal lMulticastIPAddressChanged : std_logic;
     signal lClientMACAddresschanged   : std_logic;
-    signal lProtocolErrorStatus       : std_logic;
     signal lCheckSumCounter           : natural range 0 to C_DWORD_MAX;
     signal lPacketByteEnable          : STD_LOGIC_VECTOR((G_AXIS_DATA_WIDTH / 8) - 1 downto 0);
     signal lPacketDataWrite           : STD_LOGIC;
@@ -374,8 +329,8 @@ begin
                 lSlotClear <= '0';
                 lSlotSet   <= '0';
             else
-                lSlotSetBuffer   <= lSlotSetBuffer(1) & lPacketSlotSet;
-                lSlotClearBuffer <= lSlotClearBuffer(1) & SenderRingBufferSlotClear;
+                lSlotSetBuffer   <= lSlotSetBuffer(0) & lPacketSlotSet;
+                lSlotClearBuffer <= lSlotClearBuffer(0) & SenderRingBufferSlotClear;
                 -- Slot clear is late processed
                 if (lSlotClearBuffer = B"10") then
                     lSlotClear <= '1';
@@ -403,11 +358,21 @@ begin
         if rising_edge(axis_clk) then
             if (axis_reset = '1') then
                 lFilledSlots <= (others => '0');
+                lTXOverflowCount <= (others => '0');
+                lTXAFullCount <= (others => '0');                
             else
                 if ((lSlotClear = '0') and (lSlotSet = '1')) then
                     if (lFilledSlots /= C_FILLED_SLOT_MAX) then
                         -- Saturating add
                         lFilledSlots <= lFilledSlots + 1;
+                    end if;
+                    if (lFilledSlots = C_FILLED_SLOT_MAX) then
+                        -- Saturating add
+                        lTXOverflowCount <= lTXOverflowCount + 1;
+                    end if;
+                    if (lFilledSlots >= (C_FILLED_SLOT_MAX/2)) then
+                        -- Saturating add
+                        lTXAFullCount <= lTXAFullCount + 1;
                     end if;
                 elsif ((lSlotClear = '1') and (lSlotSet = '0')) then
                     if (lFilledSlots /= 0) then
@@ -585,7 +550,6 @@ begin
                         lPacketDataWrite          <= '0';
                         lPacketSlotSet            <= '0';
                         lPacketSlotType           <= '0';
-                        lProtocolErrorStatus      <= '0';
                         lCheckSumCounter          <= 0;
                         -- alert the upstream device we ready to accept packet data
                         axis_tready               <= '1';
@@ -597,8 +561,6 @@ begin
                         lDestinationIPMulticast   <= '0';
                         lWasDoingPacketAddressing <= false;
                         iIPHeaderChecksum         <= (others => '0');
-                        lTXOverflowCount          <= (others => '0');
-                        lTXAFullCount             <= (others => '0');
 
                     when BeginOrProcessUDPPacketStreamSt =>
                         -- Disable the status of doing packet addressing
@@ -642,10 +604,6 @@ begin
                                         if (axis_tuser = '0') then
                                             -- Only process packets who have no errors 
                                             lPacketSlotSet <= '1';
-                                            if (lPacketSlotStatus = '1') then
-                                                lTXOverflowCount <= lTXOverflowCount + 1;
-                                                lTXAFullCount    <= lTXAFullCount + 1;
-                                            end if;
                                             -- Point to next slot ID
                                             lPacketSlotID  <= lPacketSlotID + 1;
                                         end if;
@@ -727,8 +685,6 @@ begin
                         end if;
 
                     when GenerateIPAddressesSt =>
-                        -- Save the new hardware source MAC address
-                        ServerMACAddress <= EthernetMACAddress;
                         -- Check the addressing range               244                                               239     
                         if ((DestinationIPAddress(31 downto 24) >= X"F4") and (DestinationIPAddress(31 downto 24) <= X"EF")) then
                             -- If the target IP address is multicast, send data to the multicast IP.
@@ -868,10 +824,6 @@ begin
                             if (laxis_ptuser = '0') then
                                 -- Only process packets who have no errors 
                                 lPacketSlotSet <= '1';
-                                if (lPacketSlotStatus = '1') then
-                                    lTXOverflowCount <= lTXOverflowCount + 1;
-                                    lTXAFullCount    <= lTXAFullCount + 1;
-                                end if;
                                 -- Point to next slot ID
                                 lPacketSlotID  <= lPacketSlotID + 1;
                             end if;
@@ -944,10 +896,6 @@ begin
                                     if (axis_tuser = '0') then
                                         -- Only process packets who have no errors 
                                         lPacketSlotSet <= '1';
-                                        if (lPacketSlotStatus = '1') then
-                                            lTXOverflowCount <= lTXOverflowCount + 1;
-                                            lTXAFullCount    <= lTXAFullCount + 1;
-                                        end if;
                                         -- Point to next slot ID
                                         lPacketSlotID  <= lPacketSlotID + 1;
                                     end if;

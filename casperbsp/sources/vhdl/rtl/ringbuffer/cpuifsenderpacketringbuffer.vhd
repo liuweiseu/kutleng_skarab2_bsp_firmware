@@ -1,47 +1,4 @@
 --------------------------------------------------------------------------------
--- Legal & Copyright:   (c) 2018 Kutleng Engineering Technologies (Pty) Ltd    - 
---                                                                             -
--- This program is the proprietary software of Kutleng Engineering Technologies-
--- and/or its licensors, and may only be used, duplicated, modified or         -
--- distributed pursuant to the terms and conditions of a separate, written     -
--- license agreement executed between you and Kutleng (an "Authorized License")-
--- Except as set forth in an Authorized License, Kutleng grants no license     -
--- (express or implied), right to use, or waiver of any kind with respect to   -
--- the Software, and Kutleng expressly reserves all rights in and to the       -
--- Software and all intellectual property rights therein.  IF YOU HAVE NO      -
--- AUTHORIZED LICENSE, THEN YOU HAVE NO RIGHT TO USE THIS SOFTWARE IN ANY WAY, -
--- AND SHOULD IMMEDIATELY NOTIFY KUTLENG AND DISCONTINUE ALL USE OF THE        -
--- SOFTWARE.                                                                   -
---                                                                             -
--- Except as expressly set forth in the Authorized License,                    -
---                                                                             -
--- 1.     This program, including its structure, sequence and organization,    -
--- constitutes the valuable trade secrets of Kutleng, and you shall use all    -
--- reasonable efforts to protect the confidentiality thereof,and to use this   -
--- information only in connection with South African Radio Astronomy           -
--- Observatory (SARAO) products.                                               -
---                                                                             -
--- 2.     TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE SOFTWARE IS PROVIDED     -
--- "AS IS" AND WITH ALL FAULTS AND KUTLENG MAKES NO PROMISES, REPRESENTATIONS  -
--- OR WARRANTIES, EITHER EXPRESS, IMPLIED, STATUTORY, OR OTHERWISE, WITH       -
--- RESPECT TO THE SOFTWARE.  KUTLENG SPECIFICALLY DISCLAIMS ANY AND ALL IMPLIED-
--- WARRANTIES OF TITLE, MERCHANTABILITY, NONINFRINGEMENT, FITNESS FOR A        -
--- PARTICULAR PURPOSE, LACK OF VIRUSES, ACCURACY OR COMPLETENESS, QUIET        -
--- ENJOYMENT, QUIET POSSESSION OR CORRESPONDENCE TO DESCRIPTION. YOU ASSUME THE-
--- ENJOYMENT, QUIET POSSESSION USE OR PERFORMANCE OF THE SOFTWARE.             -
---                                                                             -
--- 3.     TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL KUTLENG OR -
--- ITS LICENSORS BE LIABLE FOR (i) CONSEQUENTIAL, INCIDENTAL, SPECIAL, INDIRECT-
--- , OR EXEMPLARY DAMAGES WHATSOEVER ARISING OUT OF OR IN ANY WAY RELATING TO  -
--- YOUR USE OF OR INABILITY TO USE THE SOFTWARE EVEN IF KUTLENG HAS BEEN       -
--- ADVISED OF THE POSSIBILITY OF SUCH DAMAGES; OR (ii) ANY AMOUNT IN EXCESS OF -
--- THE AMOUNT ACTUALLY PAID FOR THE SOFTWARE ITSELF OR ZAR R1, WHICHEVER IS    -
--- GREATER. THESE LIMITATIONS SHALL APPLY NOTWITHSTANDING ANY FAILURE OF       -
--- ESSENTIAL PURPOSE OF ANY LIMITED REMEDY.                                    -
--- --------------------------------------------------------------------------- -
--- THIS COPYRIGHT NOTICE AND DISCLAIMER MUST BE RETAINED AS                    -
--- PART OF THIS FILE AT ALL TIMES.                                             -
---=============================================================================-
 -- Company          : Kutleng Dynamic Electronics Systems (Pty) Ltd            -
 -- Engineer         : Benjamin Hector Hlophe                                   -
 --                                                                             -
@@ -203,6 +160,7 @@ architecture rtl of cpuifsenderpacketringbuffer is
 
 	signal EgressRingBufferDataWrite  : std_logic;
 	signal EgressRingBufferData       : std_logic_vector(G_TX_DATA_WIDTH - 1 downto 0);
+	signal EgressRingBufferDataWriteEnable : std_logic_vector((G_TX_DATA_WIDTH/8) - 1 downto 0);
 	signal EgressRingBufferAddress    : unsigned(G_TX_ADDR_WIDTH - 1 downto 0);
 	signal EgressRingBufferSlotSet    : std_logic;
 	signal EgressRingBufferSlotID     : unsigned(G_SLOT_WIDTH - 1 downto 0);
@@ -261,7 +219,7 @@ begin
 			TxPacketSlotID         => TxPacketSlotID,
 			TxPacketSlotStatus     => TxPacketSlotStatus,
 			TxPacketSlotTypeStatus => open,
-			RxPacketByteEnable     => lRingBufferDataEnable,
+			RxPacketByteEnable     => EgressRingBufferDataWriteEnable,
 			RxPacketDataWrite      => EgressRingBufferDataWrite,
 			RxPacketData           => EgressRingBufferData,
 			RxPacketAddress        => std_logic_vector(EgressRingBufferAddress),
@@ -308,17 +266,20 @@ begin
 						lByteIndex                 <= 0;
 
 					when FindPresentSlotsSt =>
+						-- Clear the egress ring buffer data
+						EgressRingBufferDataWriteEnable <= (others => '0');
+						EgressRingBufferData <= (others => '0');
+						for i in 0 to C_BYTE_INDEX_MAX loop
+							lRingBufferData(i) <= (others => '0');
+							lRingBufferDataEnable(i) <= '0';
+						end loop;
 						if (IngressRingBufferSlotStatus = '1') then
 							-- There is a packet waiting on the ring buffer
 							-- Start from the base address to extract the packet
 							IngressRingBufferAddress  <= (others => '0');
-							EgressRingBufferAddress   <= (others => '0');
+							EgressRingBufferAddress   <= (others => '0');							
 							IngressRingBufferDataRead <= '1';
 							lFrameIndex               <= 0;
-							-- Clear the egress ring buffer data
-							for i in 0 to C_BYTE_INDEX_MAX loop
-								lRingBufferData(i) <= (others => '0');
-							end loop;
 							StateVariable             <= PullIngressDataSt;
 						else
 							-- Keep searching for a packet
@@ -349,7 +310,9 @@ begin
 						-- Save the data and the byte enable 
 						IngressRingBufferDataRead   <= '0';
 						-- Save the current ingress data on the egress byte index
-						lRingBufferData(lByteIndex) <= IngressRingBufferDataOut;
+						if(IngressRingBufferDataEnable(0) = '1') then
+							lRingBufferData(lByteIndex) <= IngressRingBufferDataOut;
+						end if;
 						if (IngressRingBufferDataEnable(1) = '1') then
 							-- This is the last byte
 							-- Since the last EN is a reflection of TLAST then output TLAST
@@ -398,10 +361,16 @@ begin
 							lByteIndex    <= 0;
 							StateVariable <= NextEgressAddressSt;
 						end if;
+						
 						-- Write the entire data bytes out
 						for i in 0 to C_BYTE_INDEX_MAX loop
+							EgressRingBufferDataWriteEnable(i) <= lRingBufferDataEnable(i);
 							EgressRingBufferData((8 * (i + 1)) - 1 downto (8 * i)) <= lRingBufferData(i);
 						end loop;
+						
+						--Clear the lRingBufferDataEnable for the next processing 64 byte word
+						lRingBufferDataEnable <= (others => '0');
+						
 					when NextEgressAddressSt =>
 						EgressRingBufferDataWrite  <= '0';
 						EgressRingBufferAddress <= EgressRingBufferAddress + 1;
