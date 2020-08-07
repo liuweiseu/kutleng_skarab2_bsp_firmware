@@ -102,7 +102,66 @@ entity casper100gethernetblock_no_cpu is
         axis_streaming_data_tx_tuser                : in  STD_LOGIC_VECTOR(G_NUM_STREAMING_DATA_SERVERS - 1 downto 0);
         axis_streaming_data_tx_tkeep                : in  STD_LOGIC_VECTOR(((G_AXIS_DATA_WIDTH / 8) * G_NUM_STREAMING_DATA_SERVERS) - 1 downto 0);
         axis_streaming_data_tx_tlast                : in  STD_LOGIC_VECTOR(G_NUM_STREAMING_DATA_SERVERS - 1 downto 0);
-        axis_streaming_data_tx_tready               : out STD_LOGIC_VECTOR(G_NUM_STREAMING_DATA_SERVERS - 1 downto 0)
+        axis_streaming_data_tx_tready               : out STD_LOGIC_VECTOR(G_NUM_STREAMING_DATA_SERVERS - 1 downto 0);
+
+        -- Software controlled register IO
+        gmac_reg_phy_control_h                 : in STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_phy_control_l                 : in STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_mac_address_h                 : in STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_mac_address_l                 : in STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_local_ip_address              : in STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_gateway_ip_address            : in STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_multicast_ip_address          : in STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_multicast_ip_mask             : in STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_udp_port                      : in STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_core_ctrl                     : in STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_core_type                     : out STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_phy_status_h                  : out STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_phy_status_l                  : out STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_tx_packet_rate                : out STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_tx_packet_count               : out STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_tx_valid_rate                 : out STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_tx_valid_count                : out STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_tx_overflow_count             : out STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_tx_almost_full_count          : out STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_rx_packet_rate                : out STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_rx_packet_count               : out STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_rx_valid_rate                 : out STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_rx_valid_count                : out STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_rx_overflow_count             : out STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_rx_almost_full_count          : out STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_rx_bad_packet_count           : out STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_arp_size                      : out STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_word_size                     : out STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_buffer_max_size               : out STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_count_reset                   : in STD_LOGIC_VECTOR(31 downto 0);
+
+        gmac_arp_cache_write_enable            : in STD_LOGIC_VECTOR(31 downto 0);
+        gmac_arp_cache_read_enable             : in STD_LOGIC_VECTOR(31 downto 0);
+        gmac_arp_cache_write_data              : in STD_LOGIC_VECTOR(31 downto 0);
+        gmac_arp_cache_write_address           : in STD_LOGIC_VECTOR(31 downto 0);
+        gmac_arp_cache_read_address            : in STD_LOGIC_VECTOR(31 downto 0);
+        gmac_arp_cache_read_data               : out STD_LOGIC_VECTOR(31 downto 0)
+        --gmac_tx_data_write_enable              : STD_LOGIC;
+        --gmac_tx_data_read_enable               : STD_LOGIC;
+        --gmac_tx_data_write_data                : STD_LOGIC_VECTOR(7 downto 0);
+        --gmac_tx_data_write_byte_enable         : STD_LOGIC_VECTOR(1 downto 0);
+        --gmac_tx_data_read_data                 : STD_LOGIC_VECTOR(7 downto 0);
+        --gmac_tx_data_read_byte_enable          : STD_LOGIC_VECTOR(1 downto 0);
+        --gmac_tx_data_write_address             : STD_LOGIC_VECTOR(C_CPU_TX_DATA_BUFFER_ASIZE - 1 downto 0);
+        --gmac_tx_data_read_address              : STD_LOGIC_VECTOR(C_CPU_TX_DATA_BUFFER_ASIZE - 1 downto 0);
+        --gmac_tx_ringbuffer_slot_id             : STD_LOGIC_VECTOR(G_SLOT_WIDTH - 1 downto 0);
+        --gmac_tx_ringbuffer_slot_set            : STD_LOGIC;
+        --gmac_tx_ringbuffer_slot_status         : STD_LOGIC;
+        --gmac_tx_ringbuffer_number_slots_filled : STD_LOGIC_VECTOR(G_SLOT_WIDTH - 1 downto 0);
+        --gmac_rx_data_read_enable               : STD_LOGIC;
+        --gmac_rx_data_read_data                 : STD_LOGIC_VECTOR(7 downto 0);
+        --gmac_rx_data_read_byte_enable          : STD_LOGIC_VECTOR(1 downto 0);
+        --gmac_rx_data_read_address              : STD_LOGIC_VECTOR(C_CPU_RX_DATA_BUFFER_ASIZE - 1 downto 0);
+        --gmac_rx_ringbuffer_slot_id             : STD_LOGIC_VECTOR(G_SLOT_WIDTH - 1 downto 0);
+        --gmac_rx_ringbuffer_slot_clear          : STD_LOGIC;
+        --gmac_rx_ringbuffer_slot_status         : STD_LOGIC;
+        --gmac_rx_ringbuffer_number_slots_filled : STD_LOGIC_VECTOR(G_SLOT_WIDTH - 1 downto 0);
     );
 end entity casper100gethernetblock_no_cpu;
 
@@ -408,65 +467,6 @@ architecture rtl of casper100gethernetblock_no_cpu is
     signal axis_tx_tready : STD_LOGIC;
     signal axis_tx_tuser  : STD_LOGIC;
 
-    signal gmac_reg_phy_control_h                 : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_phy_control_l                 : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_mac_address                   : STD_LOGIC_VECTOR(47 downto 0);
-    signal gmac_reg_local_ip_address              : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_gateway_ip_address            : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_multicast_ip_address          : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_multicast_ip_mask             : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_udp_port                      : STD_LOGIC_VECTOR(15 downto 0);
-    signal gmac_reg_udp_port_mask                 : STD_LOGIC_VECTOR(15 downto 0);
-    signal gmac_reg_mac_enable                    : STD_LOGIC;
-    signal gmac_reg_mac_promiscous_mode           : STD_LOGIC;
-    signal gmac_reg_counters_reset                : STD_LOGIC;
-    signal gmac_reg_core_type                     : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_phy_status_h                  : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_phy_status_l                  : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_tx_packet_rate                : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_tx_packet_count               : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_tx_valid_rate                 : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_tx_valid_count                : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_tx_overflow_count             : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_tx_afull_count                : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_rx_packet_rate                : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_rx_packet_count               : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_rx_valid_rate                 : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_rx_valid_count                : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_rx_overflow_count             : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_rx_almost_full_count          : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_rx_bad_packet_count           : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_arp_size                      : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_reg_tx_word_size                  : STD_LOGIC_VECTOR(15 downto 0);
-    signal gmac_reg_rx_word_size                  : STD_LOGIC_VECTOR(15 downto 0);
-    signal gmac_reg_tx_buffer_max_size            : STD_LOGIC_VECTOR(15 downto 0);
-    signal gmac_reg_rx_buffer_max_size            : STD_LOGIC_VECTOR(15 downto 0);
-    signal gmac_arp_cache_write_enable            : STD_LOGIC;
-    signal gmac_arp_cache_read_enable             : STD_LOGIC;
-    signal gmac_arp_cache_write_data              : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_arp_cache_read_data               : STD_LOGIC_VECTOR(31 downto 0);
-    signal gmac_arp_cache_write_address           : STD_LOGIC_VECTOR(C_ARP_CACHE_ASIZE - 1 downto 0);
-    signal gmac_arp_cache_read_address            : STD_LOGIC_VECTOR(C_ARP_CACHE_ASIZE - 1 downto 0);
-    signal gmac_tx_data_write_enable              : STD_LOGIC;
-    signal gmac_tx_data_read_enable               : STD_LOGIC;
-    signal gmac_tx_data_write_data                : STD_LOGIC_VECTOR(7 downto 0);
-    signal gmac_tx_data_write_byte_enable         : STD_LOGIC_VECTOR(1 downto 0);
-    signal gmac_tx_data_read_data                 : STD_LOGIC_VECTOR(7 downto 0);
-    signal gmac_tx_data_read_byte_enable          : STD_LOGIC_VECTOR(1 downto 0);
-    signal gmac_tx_data_write_address             : STD_LOGIC_VECTOR(C_CPU_TX_DATA_BUFFER_ASIZE - 1 downto 0);
-    signal gmac_tx_data_read_address              : STD_LOGIC_VECTOR(C_CPU_TX_DATA_BUFFER_ASIZE - 1 downto 0);
-    signal gmac_tx_ringbuffer_slot_id             : STD_LOGIC_VECTOR(G_SLOT_WIDTH - 1 downto 0);
-    signal gmac_tx_ringbuffer_slot_set            : STD_LOGIC;
-    signal gmac_tx_ringbuffer_slot_status         : STD_LOGIC;
-    signal gmac_tx_ringbuffer_number_slots_filled : STD_LOGIC_VECTOR(G_SLOT_WIDTH - 1 downto 0);
-    signal gmac_rx_data_read_enable               : STD_LOGIC;
-    signal gmac_rx_data_read_data                 : STD_LOGIC_VECTOR(7 downto 0);
-    signal gmac_rx_data_read_byte_enable          : STD_LOGIC_VECTOR(1 downto 0);
-    signal gmac_rx_data_read_address              : STD_LOGIC_VECTOR(C_CPU_RX_DATA_BUFFER_ASIZE - 1 downto 0);
-    signal gmac_rx_ringbuffer_slot_id             : STD_LOGIC_VECTOR(G_SLOT_WIDTH - 1 downto 0);
-    signal gmac_rx_ringbuffer_slot_clear          : STD_LOGIC;
-    signal gmac_rx_ringbuffer_slot_status         : STD_LOGIC;
-    signal gmac_rx_ringbuffer_number_slots_filled : STD_LOGIC_VECTOR(G_SLOT_WIDTH - 1 downto 0);
 
     signal udp_gmac_reg_core_type           : STD_LOGIC_VECTOR(31 downto 0);
     signal udp_gmac_reg_phy_status_h        : STD_LOGIC_VECTOR(31 downto 0);
@@ -592,45 +592,46 @@ begin
             aximm_clk                                    => aximm_clk,
             icap_clk                                     => icap_clk,
             axis_reset                                   => Reset,
-            aximm_gmac_reg_phy_control_h                 => x"00000000", --gmac_reg_phy_control_h,
-            aximm_gmac_reg_phy_control_l                 => x"00000000", --gmac_reg_phy_control_l,
-            aximm_gmac_reg_mac_address                   => x"000000000000", --gmac_reg_mac_address,
-            aximm_gmac_reg_local_ip_address              => x"00000000", --gmac_reg_local_ip_address,
-            aximm_gmac_reg_gateway_ip_address            => x"00000000", --gmac_reg_gateway_ip_address,
-            aximm_gmac_reg_multicast_ip_address          => x"00000000", --gmac_reg_multicast_ip_address,
-            aximm_gmac_reg_multicast_ip_mask             => x"00000000", --gmac_reg_multicast_ip_mask,
-            aximm_gmac_reg_udp_port                      => x"0000", --gmac_reg_udp_port,
-            aximm_gmac_reg_udp_port_mask                 => x"0000", --gmac_reg_udp_port_mask,
-            aximm_gmac_reg_mac_enable                    => '1', --gmac_reg_mac_enable,
-            aximm_gmac_reg_mac_promiscous_mode           => '1', --gmac_reg_mac_promiscous_mode,
-            aximm_gmac_reg_counters_reset                => '0', --gmac_reg_counters_reset,
-            aximm_gmac_reg_core_type                     => open, --gmac_reg_core_type,
-            aximm_gmac_reg_phy_status_h                  => open, --gmac_reg_phy_status_h,
-            aximm_gmac_reg_phy_status_l                  => open, --gmac_reg_phy_status_l,
-            aximm_gmac_reg_tx_packet_rate                => open, --gmac_reg_tx_packet_rate,
-            aximm_gmac_reg_tx_packet_count               => open, --gmac_reg_tx_packet_count,
-            aximm_gmac_reg_tx_valid_rate                 => open, --gmac_reg_tx_valid_rate,
-            aximm_gmac_reg_tx_valid_count                => open, --gmac_reg_tx_valid_count,
-            aximm_gmac_reg_tx_overflow_count             => open, --gmac_reg_tx_overflow_count,
-            aximm_gmac_reg_tx_afull_count                => open, --gmac_reg_tx_afull_count,
-            aximm_gmac_reg_rx_packet_rate                => open, --gmac_reg_rx_packet_rate,
-            aximm_gmac_reg_rx_packet_count               => open, --gmac_reg_rx_packet_count,
-            aximm_gmac_reg_rx_valid_rate                 => open, --gmac_reg_rx_valid_rate,
-            aximm_gmac_reg_rx_valid_count                => open, --gmac_reg_rx_valid_count,
-            aximm_gmac_reg_rx_overflow_count             => open, --gmac_reg_rx_overflow_count,
-            aximm_gmac_reg_rx_almost_full_count          => open, --gmac_reg_rx_almost_full_count,
-            aximm_gmac_reg_rx_bad_packet_count           => open, --gmac_reg_rx_bad_packet_count,
-            aximm_gmac_reg_arp_size                      => open, --gmac_reg_arp_size,
-            aximm_gmac_reg_tx_word_size                  => open, --gmac_reg_tx_word_size,
-            aximm_gmac_reg_rx_word_size                  => open, --gmac_reg_rx_word_size,
-            aximm_gmac_reg_tx_buffer_max_size            => open, --gmac_reg_tx_buffer_max_size,
-            aximm_gmac_reg_rx_buffer_max_size            => open, --gmac_reg_rx_buffer_max_size,
-            aximm_gmac_arp_cache_write_enable            => '0', --gmac_arp_cache_write_enable,
-            aximm_gmac_arp_cache_read_enable             => '0', --gmac_arp_cache_read_enable,
-            aximm_gmac_arp_cache_write_data              => "", --gmac_arp_cache_write_data,
-            aximm_gmac_arp_cache_read_data               => open, --gmac_arp_cache_read_data,
-            aximm_gmac_arp_cache_write_address           => "", --gmac_arp_cache_write_address,
-            aximm_gmac_arp_cache_read_address            => "", --gmac_arp_cache_read_address,
+            aximm_gmac_reg_phy_control_h                 => gmac_reg_phy_control_h,
+            aximm_gmac_reg_phy_control_l                 => gmac_reg_phy_control_l,
+            aximm_gmac_reg_mac_address(31 downto 0)      => gmac_reg_mac_address_l,
+            aximm_gmac_reg_mac_address(47 downto 32)     => gmac_reg_mac_address_h(15 downto 0),
+            aximm_gmac_reg_local_ip_address              => gmac_reg_local_ip_address,
+            aximm_gmac_reg_gateway_ip_address            => gmac_reg_gateway_ip_address,
+            aximm_gmac_reg_multicast_ip_address          => gmac_reg_multicast_ip_address,
+            aximm_gmac_reg_multicast_ip_mask             => gmac_reg_multicast_ip_mask,
+            aximm_gmac_reg_udp_port                      => gmac_reg_udp_port(15 downto 0),
+            aximm_gmac_reg_udp_port_mask                 => gmac_reg_udp_port(31 downto 16),
+            aximm_gmac_reg_mac_enable                    => gmac_reg_core_ctrl(0),
+            aximm_gmac_reg_mac_promiscous_mode           => gmac_reg_core_ctrl(8),
+            aximm_gmac_reg_counters_reset                => gmac_reg_count_reset(0),
+            aximm_gmac_reg_core_type                     => gmac_reg_core_type,
+            aximm_gmac_reg_phy_status_h                  => gmac_reg_phy_status_h,
+            aximm_gmac_reg_phy_status_l                  => gmac_reg_phy_status_l,
+            aximm_gmac_reg_tx_packet_rate                => gmac_reg_tx_packet_rate,
+            aximm_gmac_reg_tx_packet_count               => gmac_reg_tx_packet_count,
+            aximm_gmac_reg_tx_valid_rate                 => gmac_reg_tx_valid_rate,
+            aximm_gmac_reg_tx_valid_count                => gmac_reg_tx_valid_count,
+            aximm_gmac_reg_tx_overflow_count             => gmac_reg_tx_overflow_count,
+            aximm_gmac_reg_tx_afull_count                => gmac_reg_tx_almost_full_count,
+            aximm_gmac_reg_rx_packet_rate                => gmac_reg_rx_packet_rate,
+            aximm_gmac_reg_rx_packet_count               => gmac_reg_rx_packet_count,
+            aximm_gmac_reg_rx_valid_rate                 => gmac_reg_rx_valid_rate,
+            aximm_gmac_reg_rx_valid_count                => gmac_reg_rx_valid_count,
+            aximm_gmac_reg_rx_overflow_count             => gmac_reg_rx_overflow_count,
+            aximm_gmac_reg_rx_almost_full_count          => gmac_reg_rx_almost_full_count,
+            aximm_gmac_reg_rx_bad_packet_count           => gmac_reg_rx_bad_packet_count,
+            aximm_gmac_reg_arp_size                      => gmac_reg_arp_size,
+            aximm_gmac_reg_tx_word_size                  => gmac_reg_word_size(31 downto 16),
+            aximm_gmac_reg_rx_word_size                  => gmac_reg_word_size(15 downto 0),
+            aximm_gmac_reg_tx_buffer_max_size            => gmac_reg_buffer_max_size(31 downto 16),
+            aximm_gmac_reg_rx_buffer_max_size            => gmac_reg_buffer_max_size(15 downto 0),
+            aximm_gmac_arp_cache_write_enable            => gmac_arp_cache_write_enable(0),
+            aximm_gmac_arp_cache_read_enable             => gmac_arp_cache_read_enable(0),
+            aximm_gmac_arp_cache_write_data              => gmac_arp_cache_write_data,
+            aximm_gmac_arp_cache_read_data               => gmac_arp_cache_read_data,
+            aximm_gmac_arp_cache_write_address           => gmac_arp_cache_write_address(C_ARP_CACHE_ASIZE - 1 downto 0),
+            aximm_gmac_arp_cache_read_address            => gmac_arp_cache_read_address(C_ARP_CACHE_ASIZE - 1 downto 0),
             aximm_gmac_tx_data_write_enable              => '0', --gmac_tx_data_write_enable,
             aximm_gmac_tx_data_read_enable               => '0', --gmac_tx_data_read_enable,
             aximm_gmac_tx_data_write_data                => x"00", --gmac_tx_data_write_data,
