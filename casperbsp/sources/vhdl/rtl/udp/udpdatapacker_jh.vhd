@@ -733,7 +733,7 @@ state_val <= "001";
                         else
                             lPacketData(6*8  - 1 downto 0*8) <= "0000000100000000010111100" & lDestinationIPAddress(22 downto 0);
                         end if;
-                        lPacketData(12*8 - 1 downto 6*8) <= X"020202020202";--lSourceMACAddress;
+                        lPacketData(12*8 - 1 downto 6*8) <= lSourceMACAddress;
                         lPacketData(14*8 - 1 downto 12*8) <= byteswap(C_RESPONSE_ETHER_TYPE);
                         lPacketData(112 + 1*8  - 1 downto 112 + 0*8) <= byteswap(C_RESPONSE_IPV4IHL);
                         lPacketData(112 + 2*8  - 1 downto 112 + 1*8) <= byteswap(C_RESPONSE_DSCPECN);
