@@ -190,17 +190,7 @@ architecture rtl of udpdatapacker_jh is
     signal lDestinationUDPPort         : std_logic_vector(15 downto 0);
     signal lSourceUDPPort              : std_logic_vector(15 downto 0);
     signal lUDPCheckSum                : std_logic_vector(15 downto 0);
-    signal lIPHDRCheckSum             : unsigned(16 downto 0);
     signal iIPHeaderChecksum          : std_logic_vector(15 downto 0);
-    signal ServerMACAddress           : std_logic_vector(47 downto 0);
-    signal lPreIPHDRCheckSum          : unsigned(17 downto 0);
-    signal lServerMACAddress          : std_logic_vector(47 downto 0);
-    signal lServerIPAddress           : std_logic_vector(31 downto 0);
-    signal lServerUDPPort             : std_logic_vector(15 downto 0);
-    signal lClientIPAddress           : std_logic_vector(31 downto 0);
-    signal SourceIPAddress            : std_logic_vector(31 downto 0);
-    signal DestinationIPAddress       : std_logic_vector(31 downto 0);
-    signal lClientUDPPort             : std_logic_vector(15 downto 0);
     signal lProtocolErrorStatus       : std_logic;
     signal lPacketByteEnable          : STD_LOGIC_VECTOR((G_AXIS_DATA_WIDTH / 8) - 1 downto 0);
     signal lPacketDataWrite           : STD_LOGIC;
@@ -351,7 +341,7 @@ begin
     -- Write the user-provided destination IP/port to internal buffersonly when the input t_last goes high
     dest_address_vld <= axis_tvalid and axis_tlast;
     -- Concatenate IP and Port for ease of FIFO-ing
-    dest_ip_port_in <= lClientIPAddress & lClientUDPPort;
+    dest_ip_port_in <= ClientIPAddress & ClientUDPPort;
     -- Read destination IP/port from internal buffers whenever a word is finished coming out of the
     -- payload data extender.
     dest_address_fetch <= offset_axis_tlast and offset_axis_tvalid;
