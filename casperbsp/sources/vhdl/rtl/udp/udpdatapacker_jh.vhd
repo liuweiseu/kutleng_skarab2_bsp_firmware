@@ -351,7 +351,7 @@ begin
     -- Write the user-provided destination IP/port to internal buffersonly when the input t_last goes high
     dest_address_vld <= axis_tvalid and axis_tlast;
     -- Concatenate IP and Port for ease of FIFO-ing
-    dest_ip_port_in <= ClientIPAddress & ClientUDPPort;
+    dest_ip_port_in <= lClientIPAddress & lClientUDPPort;
     -- Read destination IP/port from internal buffers whenever a word is finished coming out of the
     -- payload data extender.
     dest_address_fetch <= offset_axis_tlast and offset_axis_tvalid;
@@ -635,6 +635,10 @@ state_val <= "001";
                         lPacketSlotSet            <= '0';
                         lPacketDataWrite          <= '0';
                         offset_axis_tready <= '1';                                                     
+                        lLocalIPNetmask      <= LocalIPNetmask;
+                        lLocalIPAddress      <= LocalIPAddress;
+                        lSourceUDPPort       <= ServerUDPPort;
+                        lSourceMACAddress    <= (EthernetMACAddress);
                         if ((offset_axis_tvalid = '1') and (EthernetMACEnable = '1')) then
                                 -- Got the tvalid  and the mac is enabled
                              --   StateVariable <= WriteUdpPayloadFirstWordSt;
@@ -693,14 +697,8 @@ state_val <= "001";
 
                                 lIsMulticast <= '0';
                             end if;
-                            --lSourceIPAddress       <= byteswap(SourceIPAddress);
-                            --lDestinationUDPPort    <= byteswap(dest_port_fifo_out);
-                            --lSourceUDPPort         <= byteswap(ServerUDPPort);
-                            --lSourceMACAddress      <= byteswap(EthernetMACAddress);
-                            lSourceIPAddress       <= (SourceIPAddress);
+                            lSourceIPAddress       <= (lLocalIPAddress);
                             lDestinationUDPPort    <= (dest_port_fifo_out);
-                            lSourceUDPPort         <= (ServerUDPPort);
-                            lSourceMACAddress      <= (EthernetMACAddress);
                             -- Lookup MAC, but if this is a multicast packet we will ignore the result
                             ARPReadAddress         <= dest_ip_fifo_out(G_ARP_CACHE_ASIZE - 1 downto 0);
                             ARPReadDataEnable      <= '1';
@@ -733,7 +731,7 @@ state_val <= "001";
                         else
                             lPacketData(6*8  - 1 downto 0*8) <= "0000000100000000010111100" & lDestinationIPAddress(22 downto 0);
                         end if;
-                        lPacketData(12*8 - 1 downto 6*8) <= lSourceMACAddress;
+                        lPacketData(12*8 - 1 downto 6*8) <= byteswap(lSourceMACAddress);
                         lPacketData(14*8 - 1 downto 12*8) <= byteswap(C_RESPONSE_ETHER_TYPE);
                         lPacketData(112 + 1*8  - 1 downto 112 + 0*8) <= byteswap(C_RESPONSE_IPV4IHL);
                         lPacketData(112 + 2*8  - 1 downto 112 + 1*8) <= byteswap(C_RESPONSE_DSCPECN);
