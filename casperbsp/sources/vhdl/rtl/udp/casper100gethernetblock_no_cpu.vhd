@@ -110,6 +110,7 @@ entity casper100gethernetblock_no_cpu is
         gmac_reg_mac_address_h                 : in STD_LOGIC_VECTOR(31 downto 0);
         gmac_reg_mac_address_l                 : in STD_LOGIC_VECTOR(31 downto 0);
         gmac_reg_local_ip_address              : in STD_LOGIC_VECTOR(31 downto 0);
+        gmac_reg_local_ip_netmask              : in STD_LOGIC_VECTOR(31 downto 0);
         gmac_reg_gateway_ip_address            : in STD_LOGIC_VECTOR(31 downto 0);
         gmac_reg_multicast_ip_address          : in STD_LOGIC_VECTOR(31 downto 0);
         gmac_reg_multicast_ip_mask             : in STD_LOGIC_VECTOR(31 downto 0);
@@ -205,6 +206,7 @@ architecture rtl of casper100gethernetblock_no_cpu is
             aximm_gmac_reg_phy_control_l                 : in  STD_LOGIC_VECTOR(31 downto 0);
             aximm_gmac_reg_mac_address                   : in  STD_LOGIC_VECTOR(47 downto 0);
             aximm_gmac_reg_local_ip_address              : in  STD_LOGIC_VECTOR(31 downto 0);
+            aximm_gmac_reg_local_ip_netmask              : in  STD_LOGIC_VECTOR(31 downto 0);
             aximm_gmac_reg_gateway_ip_address            : in  STD_LOGIC_VECTOR(31 downto 0);
             aximm_gmac_reg_multicast_ip_address          : in  STD_LOGIC_VECTOR(31 downto 0);
             aximm_gmac_reg_multicast_ip_mask             : in  STD_LOGIC_VECTOR(31 downto 0);
@@ -597,6 +599,7 @@ begin
             aximm_gmac_reg_mac_address(31 downto 0)      => gmac_reg_mac_address_l,
             aximm_gmac_reg_mac_address(47 downto 32)     => gmac_reg_mac_address_h(15 downto 0),
             aximm_gmac_reg_local_ip_address              => gmac_reg_local_ip_address,
+            aximm_gmac_reg_local_ip_netmask              => gmac_reg_local_ip_netmask,
             aximm_gmac_reg_gateway_ip_address            => gmac_reg_gateway_ip_address,
             aximm_gmac_reg_multicast_ip_address          => gmac_reg_multicast_ip_address,
             aximm_gmac_reg_multicast_ip_mask             => gmac_reg_multicast_ip_mask,

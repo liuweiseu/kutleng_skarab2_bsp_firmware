@@ -38,6 +38,7 @@ entity udpstreamingapps is
         ------------------------------------------------------------------------
         aximm_gmac_reg_mac_address                  : in  STD_LOGIC_VECTOR(47 downto 0);
         aximm_gmac_reg_local_ip_address             : in  STD_LOGIC_VECTOR(31 downto 0);
+        aximm_gmac_reg_local_ip_netmask             : in  STD_LOGIC_VECTOR(31 downto 0);
         aximm_gmac_reg_gateway_ip_address           : in  STD_LOGIC_VECTOR(31 downto 0);
         aximm_gmac_reg_multicast_ip_address         : in  STD_LOGIC_VECTOR(31 downto 0);
         aximm_gmac_reg_multicast_ip_mask            : in  STD_LOGIC_VECTOR(31 downto 0);

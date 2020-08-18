@@ -40,6 +40,7 @@ entity udpstreamingapp is
         aximm_gmac_reg_gateway_ip_address           : in  STD_LOGIC_VECTOR(31 downto 0);
         aximm_gmac_reg_multicast_ip_address         : in  STD_LOGIC_VECTOR(31 downto 0);
         aximm_gmac_reg_multicast_ip_mask            : in  STD_LOGIC_VECTOR(31 downto 0);
+        aximm_gmac_reg_local_ip_netmask             : in  STD_LOGIC_VECTOR(31 downto 0);
         aximm_gmac_reg_mac_enable                   : in  STD_LOGIC;
         aximm_gmac_reg_tx_overflow_count            : out STD_LOGIC_VECTOR(31 downto 0);
         aximm_gmac_reg_tx_afull_count               : out STD_LOGIC_VECTOR(31 downto 0);
@@ -344,7 +345,7 @@ begin
             axis_reset                     => axis_reset,
             EthernetMACAddress             => aximm_gmac_reg_mac_address,
             LocalIPAddress                 => aximm_gmac_reg_local_ip_address,
-            LocalIPNetmask                 => aximm_gmac_reg_multicast_ip_mask,
+            LocalIPNetmask                 => aximm_gmac_reg_local_ip_netmask,
             GatewayIPAddress               => aximm_gmac_reg_gateway_ip_address,
             MulticastIPAddress             => aximm_gmac_reg_multicast_ip_address,
             MulticastIPNetmask             => aximm_gmac_reg_multicast_ip_mask,
