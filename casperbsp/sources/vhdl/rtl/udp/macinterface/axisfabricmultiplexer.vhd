@@ -69,7 +69,7 @@ architecture rtl of axisfabricmultiplexer is
     type PriorityArray_t is array (G_MUX_PORTS - 1 downto 0) of std_logic_vector(G_PRIORITY_WIDTH - 1 downto 0);
 
     constant C_MUX_PORT_MAX                : natural := (G_MUX_PORTS - 1);
-    constant C_MAXIMUM_CLOCKS_PER_TRANSFER : natural := (512 - 1);
+    constant C_MAXIMUM_CLOCKS_PER_TRANSFER : natural := (1024 - 1);
 
     signal StateVariable               : AxisMultiplexerSM_t := SearchReadyPacket;
     signal axis_rx_tdata_array         : MuxTDataArray_t;

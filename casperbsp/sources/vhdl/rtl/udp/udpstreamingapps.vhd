@@ -184,7 +184,7 @@ architecture rtl of udpstreamingapps is
     component axisfabricmultiplexer is
         generic(
             G_MUX_PORTS              : natural := 4;
-            G_MAX_PACKET_BLOCKS_SIZE : natural := 64;
+            G_MAX_PACKET_BLOCKS_SIZE : natural := 256;
             G_PRIORITY_WIDTH         : natural := 4;
             G_DATA_WIDTH             : natural := 8
         );
@@ -339,7 +339,7 @@ begin
         FABMUXi : axisfabricmultiplexer
             generic map(
                 G_MUX_PORTS              => G_NUM_STREAMING_DATA_SERVERS,
-                G_MAX_PACKET_BLOCKS_SIZE => 64,
+                G_MAX_PACKET_BLOCKS_SIZE => 256,
                 G_PRIORITY_WIDTH         => G_SLOT_WIDTH,
                 G_DATA_WIDTH             => G_AXIS_DATA_WIDTH
             )
