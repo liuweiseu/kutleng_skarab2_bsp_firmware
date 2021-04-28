@@ -584,7 +584,7 @@ architecture rtl of udpipinterfacepr is
         );
     end component icapdecoupler;
 
-    constant C_MAX_PACKET_BLOCKS_SIZE : natural := 64;
+    constant C_MAX_PACKET_BLOCKS_SIZE : natural := 256;
     constant C_PRIORITY_WIDTH         : natural := G_SLOT_WIDTH;
 
     signal axis_tx_tpriority_1_arp : STD_LOGIC_VECTOR(C_PRIORITY_WIDTH - 1 downto 0);
