@@ -28,6 +28,8 @@ entity casper100gethernetblock_no_cpu is
         FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0);
         -- Boolean to include or not include ICAP for partial reconfiguration
         G_INCLUDE_ICAP               : boolean              := false;
+        -- Use RS FEC in MAC IP
+        G_USE_RS_FEC                 : boolean              := false;
         -- Streaming data size (must be 512)
         G_AXIS_DATA_WIDTH            : natural              := 512;
         -- Number of UDP Streaming Data Server Modules 
@@ -353,7 +355,8 @@ architecture rtl of casper100gethernetblock_no_cpu is
             FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);
             FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
             FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0);
-            C_MAC_INSTANCE : natural range 0 to 1 := 0
+            C_MAC_INSTANCE : natural range 0 to 1 := 0;
+            C_USE_RS_FEC : boolean := false
         );
         port(
             -- Ethernet reference clock for 156.25MHz
@@ -513,7 +516,8 @@ begin
             FABRIC_MAC  => FABRIC_MAC,
             FABRIC_IP   => FABRIC_IP,
             FABRIC_PORT => FABRIC_PORT,
-            C_MAC_INSTANCE => 0         -- Instantiate CMAC0 QSFP1
+            C_MAC_INSTANCE => 0,         -- Instantiate CMAC0 QSFP1
+            C_USE_RS_FEC => G_USE_RS_FEC
         )
         port map(
             Clk100MHz                    => RefClk100MHz,

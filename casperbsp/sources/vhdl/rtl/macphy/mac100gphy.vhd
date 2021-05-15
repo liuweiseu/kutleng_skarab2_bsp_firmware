@@ -21,7 +21,8 @@ entity mac100gphy is
         FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
         FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0);
         C_MAC_INSTANCE             : natural range 0 to 1 := 0;
-        C_COURSE_PACKET_THROTTLING : boolean              := false
+        C_COURSE_PACKET_THROTTLING : boolean              := false;
+        C_USE_RS_FEC : boolean := false
     );
     port(
         -- Ethernet reference clock for 156.25MHz
@@ -96,7 +97,8 @@ architecture rtl of mac100gphy is
     generic(
         FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);
         FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
-        FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0)
+        FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0);
+        C_USE_RS_FEC : boolean := false
     );
         port(
             -- Reference clock to generate 100MHz from
@@ -336,7 +338,8 @@ begin
         generic map(
             FABRIC_MAC  => FABRIC_MAC,
             FABRIC_IP   => FABRIC_IP,
-            FABRIC_PORT => FABRIC_PORT
+            FABRIC_PORT => FABRIC_PORT,
+            C_USE_RS_FEC => C_USE_RS_FEC
         )
         port map(
             Clk100MHz                    => Clk100MHz,
