@@ -1,19 +1,19 @@
---------------------------------------------------------------------------------
--- Company          : Kutleng Dynamic Electronics Systems (Pty) Ltd            -
--- Engineer         : Benjamin Hector Hlophe                                   -
---                                                                             -
--- Design Name      : CASPER BSP                                               -
--- Module Name      : gmacqsfptop - rtl                                       -
--- Project Name     : SKARAB2                                                  -
--- Target Devices   : N/A                                                      -
--- Tool Versions    : N/A                                                      -
--- Description      : This module instantiates one QSFP28+ ports with CMACs.   -
---                    TODO                                                     -
---                    Enable AXI Lite bus for statistics collection.           - 
--- Dependencies     : EthMACPHY100GQSFP4x                                      -
--- Revision History : V1.0 - Initial design                                    -
---                  : V1.1 - changed to Vivado 2019.2 and used AXI-S           -
---------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------
+-- Company          : Kutleng Dynamic Electronics Systems (Pty) Ltd                     -
+-- Engineer         : Benjamin Hector Hlophe                                            -
+--                                                                                      -
+-- Design Name      : CASPER BSP                                                        -
+-- Module Name      : gmacqsfptop - rtl                                                 -
+-- Project Name     : SKARAB2                                                           -
+-- Target Devices   : N/A                                                               -
+-- Tool Versions    : N/A                                                               -
+-- Description      : This module instantiates one QSFP28+ ports with CMACs.            -
+--                    TODO                                                              -
+--                    Enable AXI Lite bus for statistics collection.                    -
+-- Dependencies     : cmac_usplus_core_support wrapping EthMACPHY100GQSFP4x_rsfec       -
+-- Revision History : V1.0 - Initial design                                             -
+--                  : V1.1 - changed to Vivado 2019.2 and used AXI-S                    -
+-----------------------------------------------------------------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -24,7 +24,9 @@ entity gmacqsfptop is
         FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);
         FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
         FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0);
-        C_USE_RS_FEC : boolean := false
+        C_USE_RS_FEC : boolean := false;
+        -- Number GTYE4_COMMON primitives to be instanced, for hardware layouts (like zcu216) using 2GTY per quad across 2 quads
+        C_N_COMMON : natural range 1 to 2 := 1
     );
     port(
         -- Reference clock to generate 100MHz from
@@ -91,8 +93,10 @@ entity gmacqsfptop is
 end entity gmacqsfptop;
 
 architecture rtl of gmacqsfptop is
-
-    component EthMACPHY100GQSFP4x_rsfec is
+    component cmac_usplus_core_support is
+        generic(
+            N_COMMON : natural range 1 to 2 := 1
+        );
         port(
             gt_rxp_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
             gt_rxn_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
@@ -342,9 +346,12 @@ architecture rtl of gmacqsfptop is
             stat_rx_rsfec_lane_mapping : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
             stat_rx_rsfec_uncorrected_cw_inc : OUT STD_LOGIC
         );
-    end component EthMACPHY100GQSFP4x_rsfec;
-    
-        component EthMACPHY100GQSFP4x is
+    end component cmac_usplus_core_support;
+
+    component cmac_usplus_core_support_norsfec is
+        generic(
+            N_COMMON : natural range 1 to 2 := 1
+        );
         port(
             gt_rxp_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
             gt_rxn_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
@@ -570,35 +577,34 @@ architecture rtl of gmacqsfptop is
             drp_rdy                        : out STD_LOGIC;
             drp_we                         : in  STD_LOGIC
         );
-    end component EthMACPHY100GQSFP4x;
+    end component cmac_usplus_core_support_norsfec;
 
     component yellow_block_100gbe_udp_rx is
-    generic(
-        FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);
-        FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
-        FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0)
-    );
-    port(
-        yellow_block_user_clk    : in  STD_LOGIC;
-        max_rx_axi_clk           : in  STD_LOGIC;
-        -- -- Setup information
-        -- yellow_block_mac       : in  STD_LOGIC_VECTOR(47 downto 0);
-        -- yellow_block_ip        : in  STD_LOGIC_VECTOR(31 downto 0);
-        -- yellow_block_port      : in  STD_LOGIC_VECTOR(15 downto 0);
-        --Inputs from AXIS bus of the MAC side
-        axis_rx_tdata            : in  STD_LOGIC_VECTOR(511 downto 0);
-        axis_rx_tvalid           : in  STD_LOGIC;
-        axis_rx_tuser            : in  STD_LOGIC;
-        axis_rx_tkeep            : in  STD_LOGIC_VECTOR(63 downto 0);
-        axis_rx_tlast            : in  STD_LOGIC;
+        generic(
+            FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);
+            FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
+            FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0)
+        );
+        port(
+            yellow_block_user_clk    : in  STD_LOGIC;
+            max_rx_axi_clk           : in  STD_LOGIC;
+            -- -- Setup information
+            -- yellow_block_mac       : in  STD_LOGIC_VECTOR(47 downto 0);
+            -- yellow_block_ip        : in  STD_LOGIC_VECTOR(31 downto 0);
+            -- yellow_block_port      : in  STD_LOGIC_VECTOR(15 downto 0);
+            --Inputs from AXIS bus of the MAC side
+            axis_rx_tdata            : in  STD_LOGIC_VECTOR(511 downto 0);
+            axis_rx_tvalid           : in  STD_LOGIC;
+            axis_rx_tuser            : in  STD_LOGIC;
+            axis_rx_tkeep            : in  STD_LOGIC_VECTOR(63 downto 0);
+            axis_rx_tlast            : in  STD_LOGIC;
 
-        yellow_block_rx_data     : out  STD_LOGIC_VECTOR(511 downto 0);
-        yellow_block_rx_valid    : out  STD_LOGIC;
-        yellow_block_rx_eof      : out  STD_LOGIC;
-        yellow_block_rx_overrun  : out STD_LOGIC
-
-    );
-end component  yellow_block_100gbe_udp_rx;
+            yellow_block_rx_data     : out  STD_LOGIC_VECTOR(511 downto 0);
+            yellow_block_rx_valid    : out  STD_LOGIC;
+            yellow_block_rx_eof      : out  STD_LOGIC;
+            yellow_block_rx_overrun  : out STD_LOGIC
+        );
+    end component  yellow_block_100gbe_udp_rx;
 
     signal lbus_rx_clk         : STD_LOGIC;
     signal lbus_tx_clk         : STD_LOGIC;
@@ -824,12 +830,15 @@ begin
     end process TxCountersProc;
 
     USE_FEC: if (C_USE_RS_FEC) generate
-        MACPHY_QSFP_i_rsfec : EthMACPHY100GQSFP4x_rsfec
+        MACPHY_QSFP_i_rsfec : cmac_usplus_core_support
+            generic map (
+              N_COMMON => C_N_COMMON
+            )
             port map(
-                gt_rxp_in                     => qsfp_mgt_rx_p,
-                gt_rxn_in                     => qsfp_mgt_rx_n,
-                gt_txp_out                    => qsfp_mgt_tx_p,
-                gt_txn_out                    => qsfp_mgt_tx_n,
+                gt_rxp_in                      => qsfp_mgt_rx_p,
+                gt_rxn_in                      => qsfp_mgt_rx_n,
+                gt_txp_out                     => qsfp_mgt_tx_p,
+                gt_txn_out                     => qsfp_mgt_tx_n,
                 gt_txusrclk2                   => lbus_tx_clk,
                 gt_loopback_in                 => gt_loopback_in,
                 gt_rxrecclkout                 => open,
@@ -1056,8 +1065,12 @@ begin
                 ctl_rx_rsfec_enable_indication => '1'
             );
     end generate;
+
     NO_USE_FEC: if (C_USE_RS_FEC = false) generate
-        MACPHY_QSFP_i_norsfec : EthMACPHY100GQSFP4x
+        MACPHY_QSFP_i_norsfec : cmac_usplus_core_support_norsfec
+            generic map (
+              N_COMMON => C_N_COMMON
+            )
             port map(
                 gt_rxp_in                     => qsfp_mgt_rx_p,
                 gt_rxn_in                     => qsfp_mgt_rx_n,
@@ -1287,25 +1300,25 @@ begin
 
    yellow_block_100gbe_udp_rx_inst: yellow_block_100gbe_udp_rx
    generic map(
-            FABRIC_MAC  => FABRIC_MAC,
-            FABRIC_IP   => FABRIC_IP,
-            FABRIC_PORT => FABRIC_PORT
-        )
+       FABRIC_MAC  => FABRIC_MAC,
+       FABRIC_IP   => FABRIC_IP,
+       FABRIC_PORT => FABRIC_PORT
+   )
    port map(
-            -- MAC received data (packet in) for UDP checking and processing
-            max_rx_axi_clk          => lbus_tx_clk, -- = gt_txusrclk2
-            axis_rx_tdata           => mac_rx_axis_rx_tdata,
-            axis_rx_tvalid          => mac_rx_axis_rx_tvalid,
-            axis_rx_tuser           => mac_rx_axis_rx_tuser,
-            axis_rx_tkeep           => mac_rx_axis_rx_tkeep,
-            axis_rx_tlast           => mac_rx_axis_rx_tlast,
+       -- MAC received data (packet in) for UDP checking and processing
+       max_rx_axi_clk          => lbus_tx_clk, -- = gt_txusrclk2
+       axis_rx_tdata           => mac_rx_axis_rx_tdata,
+       axis_rx_tvalid          => mac_rx_axis_rx_tvalid,
+       axis_rx_tuser           => mac_rx_axis_rx_tuser,
+       axis_rx_tkeep           => mac_rx_axis_rx_tkeep,
+       axis_rx_tlast           => mac_rx_axis_rx_tlast,
 
-            -- MAC received data (UDP Packet in) with UDP payload stripped and sent to yellow block 100G RX Data interface
-            yellow_block_user_clk     => yellow_block_user_clk,
-            yellow_block_rx_data      => yellow_block_rx_data,
-            yellow_block_rx_valid     => yellow_block_rx_valid,
-            yellow_block_rx_eof       => yellow_block_rx_eof,
-            yellow_block_rx_overrun   => yellow_block_rx_overrun
-    );
+       -- MAC received data (UDP Packet in) with UDP payload stripped and sent to yellow block 100G RX Data interface
+       yellow_block_user_clk     => yellow_block_user_clk,
+       yellow_block_rx_data      => yellow_block_rx_data,
+       yellow_block_rx_valid     => yellow_block_rx_valid,
+       yellow_block_rx_eof       => yellow_block_rx_eof,
+       yellow_block_rx_overrun   => yellow_block_rx_overrun
+   );
 
 end architecture rtl;
