@@ -24,7 +24,7 @@ entity gmacqsfptop is
         FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);
         FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
         FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0);
-        C_USE_RS_FEC : boolean := false;
+        C_USE_RS_FEC : boolean := false
     );
     port(
         -- Reference clock to generate 100MHz from
@@ -1091,7 +1091,7 @@ begin
                 ctl_rx_rsfec_enable_correction => '1',
                 ctl_rx_rsfec_enable_indication => '1'
             );
-    end generate
+    end generate;
     NO_USE_FEC : if (C_USE_RS_FEC = false) generate
         MACPHY_QSFP_i_norsfec : EthMACPHY100GQSFP4x
             port map(
