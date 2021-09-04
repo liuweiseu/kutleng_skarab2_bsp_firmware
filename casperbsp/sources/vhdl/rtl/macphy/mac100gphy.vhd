@@ -17,9 +17,6 @@ use ieee.std_logic_1164.all;
 
 entity mac100gphy is
     generic(
-        FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);
-        FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
-        FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0);
         C_MAC_INSTANCE             : natural range 0 to 1 := 0;
         C_COURSE_PACKET_THROTTLING : boolean              := false;
         C_USE_RS_FEC : boolean := false
@@ -44,6 +41,10 @@ entity mac100gphy is
         Enable                       : in  STD_LOGIC;
         Reset                        : in  STD_LOGIC;
         DataRateBackOff              : out STD_LOGIC;
+        -- incoming packet filters
+        fabric_mac                   : in STD_LOGIC_VECTOR(47 downto 0);
+        fabric_ip                    : in STD_LOGIC_VECTOR(31 downto 0);
+        fabric_port                  : in STD_LOGIC_VECTOR(15 downto 0);
         -- Statistics interface
         gmac_reg_core_type           : out STD_LOGIC_VECTOR(31 downto 0);
         gmac_reg_phy_status_h        : out STD_LOGIC_VECTOR(31 downto 0);
@@ -95,9 +96,6 @@ end entity mac100gphy;
 architecture rtl of mac100gphy is
     component gmacqsfptop is
     generic(
-        FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);
-        FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
-        FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0);
         C_USE_RS_FEC : boolean := false
     );
         port(
@@ -107,6 +105,10 @@ architecture rtl of mac100gphy is
             -- QSFP+ 
             mgt_qsfp_clock_p             : in  STD_LOGIC;
             mgt_qsfp_clock_n             : in  STD_LOGIC;
+            -- incoming packet filters
+            fabric_mac                   : in STD_LOGIC_VECTOR(47 downto 0);
+            fabric_ip                    : in STD_LOGIC_VECTOR(31 downto 0);
+            fabric_port                  : in STD_LOGIC_VECTOR(15 downto 0);
             --RX     
             qsfp_mgt_rx_p                : in  STD_LOGIC_VECTOR(3 downto 0);
             qsfp_mgt_rx_n                : in  STD_LOGIC_VECTOR(3 downto 0);
@@ -336,15 +338,15 @@ begin
 
     CMAC0_i : gmacqsfptop
         generic map(
-            FABRIC_MAC  => FABRIC_MAC,
-            FABRIC_IP   => FABRIC_IP,
-            FABRIC_PORT => FABRIC_PORT,
             C_USE_RS_FEC => C_USE_RS_FEC
         )
         port map(
             Clk100MHz                    => Clk100MHz,
             Enable                       => Enable,
             Reset                        => Reset,
+            fabric_mac                   => fabric_mac,
+            fabric_ip                    => fabric_ip,
+            fabric_port                  => fabric_port,
             mgt_qsfp_clock_p             => mgt_qsfp_clock_p,
             mgt_qsfp_clock_n             => mgt_qsfp_clock_n,
             qsfp_mgt_rx_p                => qsfp_mgt_rx_p,

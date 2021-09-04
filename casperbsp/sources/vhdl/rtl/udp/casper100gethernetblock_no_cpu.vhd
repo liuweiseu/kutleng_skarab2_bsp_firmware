@@ -23,9 +23,6 @@ use ieee.std_logic_1164.all;
 
 entity casper100gethernetblock_no_cpu is
     generic(
-        FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);
-        FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
-        FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0);
         -- Boolean to include or not include ICAP for partial reconfiguration
         G_INCLUDE_ICAP               : boolean              := false;
         -- Use RS FEC in MAC IP
@@ -352,9 +349,6 @@ architecture rtl of casper100gethernetblock_no_cpu is
 
     component mac100gphy is
         generic(
-            FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);
-            FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
-            FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0);
             C_MAC_INSTANCE : natural range 0 to 1 := 0;
             C_USE_RS_FEC : boolean := false
         );
@@ -374,6 +368,10 @@ architecture rtl of casper100gethernetblock_no_cpu is
             ------------------------------------------------------------------------
             -- These signals/busses run at 322.265625MHz clock domain              -
             ------------------------------------------------------------------------
+            -- Incoming packet filters
+            fabric_mac                   : in STD_LOGIC_VECTOR(47 downto 0);
+            fabric_ip                    : in STD_LOGIC_VECTOR(31 downto 0);
+            fabric_port                  : in STD_LOGIC_VECTOR(15 downto 0);
             -- Global System Enable
             Enable                       : in  STD_LOGIC;
             Reset                        : in  STD_LOGIC;
@@ -513,9 +511,6 @@ begin
     ----------------------------------------------------------------------------
     GMAC_i : mac100gphy
         generic map(
-            FABRIC_MAC  => FABRIC_MAC,
-            FABRIC_IP   => FABRIC_IP,
-            FABRIC_PORT => FABRIC_PORT,
             C_MAC_INSTANCE => 0,         -- Instantiate CMAC0 QSFP1
             C_USE_RS_FEC => G_USE_RS_FEC
         )
@@ -523,6 +518,9 @@ begin
             Clk100MHz                    => RefClk100MHz,
             Enable                       => udp_gmac_reg_mac_enable,
             Reset                        => Reset,
+            fabric_mac                   => gmac_reg_mac_address_h(15 downto 0) & gmac_reg_mac_address_l(31 downto 0),
+            fabric_ip                    => gmac_reg_local_ip_address,
+            fabric_port                  => gmac_reg_udp_port,
             gmac_reg_core_type           => udp_gmac_reg_core_type,
             gmac_reg_phy_status_h        => udp_gmac_reg_phy_status_h,
             gmac_reg_phy_status_l        => udp_gmac_reg_phy_status_l,

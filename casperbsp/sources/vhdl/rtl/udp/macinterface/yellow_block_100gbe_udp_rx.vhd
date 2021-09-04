@@ -17,15 +17,15 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity yellow_block_100gbe_udp_rx is
-  generic(
-    FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);  -- From 100Gbe Yellow Block Mask Parameters: Own / Fabric MAC Address
-    FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);   -- From 100Gbe Yellow Block Mask Parameters: Own / Fabric IP Address
-    FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0)  -- From 100Gbe Yellow Block Mask Parameters: Own / Fabric UDP Port 
-  );
   port(
+    -- Configuration information for filtering packets
+    -- These are used on the mac_rx_axi_clk domain
+    fabric_mac               : in STD_LOGIC_VECTOR(47 downto 0);
+    fabric_ip                : in STD_LOGIC_VECTOR(31 downto 0);
+    fabric_port              : in STD_LOGIC_VECTOR(15 downto 0); 
     --Inputs from AXI bus of the Xilinx CMAC RX side
     -- MAC received data (packet in) for UDP checking and processing 
-    max_rx_axi_clk           : in  STD_LOGIC;
+    mac_rx_axi_clk           : in  STD_LOGIC;
     axis_rx_tdata            : in  STD_LOGIC_VECTOR(511 downto 0);
     axis_rx_tvalid           : in  STD_LOGIC;
     axis_rx_tuser            : in  STD_LOGIC;
@@ -170,12 +170,12 @@ begin
 
   -- Incomminf CMAC RX packet handling
   -- Check that the incomming frame matches our MAC, IP, UDP Port 
-  valid_udp_packet <= '1' when ((lProtocol = C_UDP_PROTOCOL and lIPVIHL = C_IPV_IHL and byteswap(lEtherType) = C_IPV4_TYPE and byteswap(lDestinationMACAddress) = FABRIC_MAC and byteswap(lDestinationIPAddress) = FABRIC_IP and byteswap(lDestinationUDPPort) = FABRIC_PORT and axis_rx_tvalid = '1')) else '0';
+  valid_udp_packet <= '1' when ((lProtocol = C_UDP_PROTOCOL and lIPVIHL = C_IPV_IHL and byteswap(lEtherType) = C_IPV4_TYPE and byteswap(lDestinationMACAddress) = fabric_mac and byteswap(lDestinationIPAddress) = fabric_ip and byteswap(lDestinationUDPPort) = fabric_port and axis_rx_tvalid = '1')) else '0';
   
   -- if the packet matches all the critera then strip off the UDP payload, and realign it to 511:0 for 100 GbE yellow block RX_DATA
-  pack_valid_udp_packet_into_fifo : process(max_rx_axi_clk)
+  pack_valid_udp_packet_into_fifo : process(mac_rx_axi_clk)
     begin
-      if rising_edge(max_rx_axi_clk) then
+      if rising_edge(mac_rx_axi_clk) then
         -- defaults
         valid_udp_packetR <= valid_udp_packet;
         axis_rx_tdataR <= axis_rx_tdata;
@@ -227,7 +227,7 @@ begin
   mac_rx_packet_fifo_inst: async_fifo_513b_512deep 
     port map (
       -- MAC RX Side Clock domain - FIFO Write side into FIFO: Validated UDP payload + control
-      wr_clk => max_rx_axi_clk,
+      wr_clk => mac_rx_axi_clk,
       rst => '0',
       wr_en => payloadDataToFifoWrWrEn,
       full => fifo_full,

@@ -21,9 +21,6 @@ use ieee.numeric_std.all;
 
 entity gmacqsfptop is
     generic(
-        FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);
-        FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
-        FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0);
         C_USE_RS_FEC : boolean := false
     );
     port(
@@ -65,6 +62,10 @@ entity gmacqsfptop is
         lbus_tx_ovfout               : out STD_LOGIC;
         -- Underflow signal
         lbus_tx_unfout               : out STD_LOGIC;
+        -- Incoming packet filters (seemingly should be brought onto lbus_tx_clk)
+        fabric_mac  : in STD_LOGIC_VECTOR(47 downto 0);
+        fabric_ip   : in STD_LOGIC_VECTOR(31 downto 0);
+        fabric_port : in STD_LOGIC_VECTOR(15 downto 0);
         -- AXIS Bus
         -- RX Bus
         axis_rx_clkin                : in  STD_LOGIC;
@@ -573,18 +574,13 @@ architecture rtl of gmacqsfptop is
     end component EthMACPHY100GQSFP4x;
 
     component yellow_block_100gbe_udp_rx is
-    generic(
-        FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);
-        FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
-        FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0)
-    );
     port(
         yellow_block_user_clk    : in  STD_LOGIC;
-        max_rx_axi_clk           : in  STD_LOGIC;
+        mac_rx_axi_clk           : in  STD_LOGIC;
         -- -- Setup information
-        -- yellow_block_mac       : in  STD_LOGIC_VECTOR(47 downto 0);
-        -- yellow_block_ip        : in  STD_LOGIC_VECTOR(31 downto 0);
-        -- yellow_block_port      : in  STD_LOGIC_VECTOR(15 downto 0);
+        fabric_mac  : in STD_LOGIC_VECTOR(47 downto 0);
+        fabric_ip   : in STD_LOGIC_VECTOR(31 downto 0);
+        fabric_port : in STD_LOGIC_VECTOR(15 downto 0);
         --Inputs from AXIS bus of the MAC side
         axis_rx_tdata            : in  STD_LOGIC_VECTOR(511 downto 0);
         axis_rx_tvalid           : in  STD_LOGIC;
@@ -1293,7 +1289,7 @@ begin
         )
    port map(
             -- MAC received data (packet in) for UDP checking and processing
-            max_rx_axi_clk          => lbus_tx_clk, -- = gt_txusrclk2
+            mac_rx_axi_clk          => lbus_tx_clk, -- = gt_txusrclk2
             axis_rx_tdata           => mac_rx_axis_rx_tdata,
             axis_rx_tvalid          => mac_rx_axis_rx_tvalid,
             axis_rx_tuser           => mac_rx_axis_rx_tuser,
