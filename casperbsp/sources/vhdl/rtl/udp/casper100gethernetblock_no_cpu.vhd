@@ -520,7 +520,7 @@ begin
             Reset                        => Reset,
             fabric_mac                   => gmac_reg_mac_address_h(15 downto 0) & gmac_reg_mac_address_l(31 downto 0),
             fabric_ip                    => gmac_reg_local_ip_address,
-            fabric_port                  => gmac_reg_udp_port,
+            fabric_port                  => gmac_reg_udp_port(15 downto 0),
             gmac_reg_core_type           => udp_gmac_reg_core_type,
             gmac_reg_phy_status_h        => udp_gmac_reg_phy_status_h,
             gmac_reg_phy_status_l        => udp_gmac_reg_phy_status_l,
