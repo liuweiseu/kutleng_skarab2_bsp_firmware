@@ -487,6 +487,8 @@ architecture rtl of casper100gethernetblock_no_cpu is
     signal udp_gmac_reg_rx_bad_packet_count : STD_LOGIC_VECTOR(31 downto 0);
     signal udp_gmac_reg_counters_reset      : STD_LOGIC;
     signal udp_gmac_reg_mac_enable          : STD_LOGIC;
+    
+    signal fabric_mac : STD_LOGIC_VECTOR(47 downto 0);
 
 begin
     Reset <= (not RefClkLocked) or axis_reset;
@@ -503,6 +505,8 @@ begin
     qsfp_modsell_ls <= '1';
     -- Keep the module out of reset    
     qsfp_resetl_ls  <= (not Reset);
+    -- Construct mac address
+    fabric_mac <= gmac_reg_mac_address_h(15 downto 0) & gmac_reg_mac_address_l(31 downto 0);
     ----------------------------------------------------------------------------
     --          QSFP28+ CMAC0 100G MAC Instance (port 1)                      --
     -- The CMAC resides in the static partition of the design.                --
@@ -518,7 +522,7 @@ begin
             Clk100MHz                    => RefClk100MHz,
             Enable                       => udp_gmac_reg_mac_enable,
             Reset                        => Reset,
-            fabric_mac                   => gmac_reg_mac_address_h(15 downto 0) & gmac_reg_mac_address_l(31 downto 0),
+            fabric_mac                   => fabric_mac,
             fabric_ip                    => gmac_reg_local_ip_address,
             fabric_port                  => gmac_reg_udp_port(15 downto 0),
             gmac_reg_core_type           => udp_gmac_reg_core_type,
