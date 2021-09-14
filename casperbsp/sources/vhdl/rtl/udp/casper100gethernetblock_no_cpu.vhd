@@ -32,7 +32,9 @@ entity casper100gethernetblock_no_cpu is
         -- Number of UDP Streaming Data Server Modules 
         G_NUM_STREAMING_DATA_SERVERS : natural range 1 to 4 := 1;
         -- Number of slots in circular buffers (2^?)
-        G_SLOT_WIDTH                 : natural              := 2
+        G_SLOT_WIDTH                 : natural              := 2;
+        -- Instance ID
+        G_MAC_INSTANCE               : integer              := 0
     );
     port(
         -- 100MHz reference clock needed by 100G Ethernet PHY
@@ -349,7 +351,7 @@ architecture rtl of casper100gethernetblock_no_cpu is
 
     component mac100gphy is
         generic(
-            C_MAC_INSTANCE : natural range 0 to 1 := 0;
+            C_MAC_INSTANCE : natural range 0 to 3 := 0;
             C_USE_RS_FEC : boolean := false
         );
         port(
@@ -515,7 +517,7 @@ begin
     ----------------------------------------------------------------------------
     GMAC_i : mac100gphy
         generic map(
-            C_MAC_INSTANCE => 0,         -- Instantiate CMAC0 QSFP1
+            C_MAC_INSTANCE => G_MAC_INSTANCE,
             C_USE_RS_FEC => G_USE_RS_FEC
         )
         port map(

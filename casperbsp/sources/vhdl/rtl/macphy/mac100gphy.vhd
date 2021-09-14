@@ -17,7 +17,7 @@ use ieee.std_logic_1164.all;
 
 entity mac100gphy is
     generic(
-        C_MAC_INSTANCE             : natural range 0 to 1 := 0;
+        C_MAC_INSTANCE             : natural range 0 to 3 := 0;
         C_COURSE_PACKET_THROTTLING : boolean              := false;
         C_USE_RS_FEC : boolean := false
     );
@@ -96,7 +96,8 @@ end entity mac100gphy;
 architecture rtl of mac100gphy is
     component gmacqsfptop is
     generic(
-        C_USE_RS_FEC : boolean := false
+        C_USE_RS_FEC : boolean := false;
+        C_INST_ID : integer 
     );
         port(
             -- Reference clock to generate 100MHz from
@@ -334,11 +335,12 @@ begin
 
     end generate;
 
-    assert C_MAC_INSTANCE > 1 report "Error bad C_MAC_INSTANCE = " & integer'image(C_MAC_INSTANCE) severity failure;
+    assert C_MAC_INSTANCE > 3 report "Error bad C_MAC_INSTANCE = " & integer'image(C_MAC_INSTANCE) severity failure;
 
     CMAC0_i : gmacqsfptop
         generic map(
-            C_USE_RS_FEC => C_USE_RS_FEC
+            C_USE_RS_FEC => C_USE_RS_FEC,
+            C_INST_ID => C_MAC_INSTANCE
         )
         port map(
             Clk100MHz                    => Clk100MHz,
