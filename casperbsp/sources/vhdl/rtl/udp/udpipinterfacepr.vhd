@@ -621,6 +621,7 @@ architecture rtl of udpipinterfacepr is
     constant C_REG_READ_WRITE_WORD_LENGTHS : NATURAL                       := 16; -- Word lengths are 16 bits at a time
     constant C_EMAC_ADDR_1                 : std_logic_vector(47 downto 0) := X"000A_3502_4192";
     constant C_IP_ADDR_1                   : std_logic_vector(31 downto 0) := X"C0A8_640A";
+    signal ARPCacheClock                   :std_logic_vector(G_NUM_STREAMING_DATA_SERVERS - 1 downto 0);
     signal ARPReadDataEnable               : STD_LOGIC_VECTOR(G_NUM_STREAMING_DATA_SERVERS - 1 downto 0);
     signal ARPReadData                     : STD_LOGIC_VECTOR((G_NUM_STREAMING_DATA_SERVERS * G_ARP_DATA_WIDTH * 2) - 1 downto 0);
     signal ARPReadAddress                  : STD_LOGIC_VECTOR((G_NUM_STREAMING_DATA_SERVERS * (G_ARP_CACHE_ASIZE - 1)) - 1 downto 0);
@@ -691,6 +692,8 @@ begin
     aximm_gmac_reg_rx_bad_packet_count <= gmac_reg_rx_bad_packet_count;
     gmac_reg_counters_reset            <= aximm_gmac_reg_counters_reset;
 
+    ARPCacheClock <= (others => axis_clk);
+
     ARPCACHE_i : arpcache
         generic map(
             G_WRITE_DATA_WIDTH => G_ARP_DATA_WIDTH,
@@ -699,7 +702,7 @@ begin
         )
         port map(
             CPUClk             => aximm_clk,
-            EthernetClk        => axis_streaming_data_clk,
+            EthernetClk        => ARPCacheClock,
             -- CPU port
             CPUReadDataEnable  => aximm_gmac_arp_cache_read_enable,
             CPUReadData        => aximm_gmac_arp_cache_read_data,
