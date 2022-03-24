@@ -2219,7 +2219,7 @@ begin
     gmac_reg_rx_valid_count      <= std_logic_vector(to_unsigned(rx_valid_counter, gmac_reg_rx_valid_count'length));
     gmac_reg_rx_bad_packet_count <= std_logic_vector(to_unsigned(rx_bad_packet_counter, gmac_reg_rx_bad_packet_count'length));
 
-    PhySettingsProc : process(lbus_tx_clk)
+    PhySettingsProcTx : process(lbus_tx_clk)
     begin
         if rising_edge(lbus_tx_clk) then
             if ((tx_sync_reg_counters_reset = '1') or (lbus_reset = '1') or (Reset = '1')) then
@@ -2231,10 +2231,6 @@ begin
                 ctl_tx_send_lfi     <= '0';
                 -- Don't set transmitter to send test patterns 
                 ctl_tx_test_pattern <= '0';
-                -- Don't force resynchronizations   
-                ctl_rx_force_resync <= '0';
-                -- Don't set receiver to test patterns
-                ctl_rx_test_pattern <= '0';
                 -- Set loop back to normal operation for all 4 MGTs
                 gt_loopback_in      <= X"000";
             else
@@ -2250,18 +2246,30 @@ begin
                 -- Don't set transmitter to send test patterns 
                 ctl_tx_test_pattern        <= ctl_tx_test_pattern_unsync;
                 ctl_tx_test_pattern_unsync <= gmac_reg_phy_control_h(3);
+                -- Set loop back to normal operation for all 4 MGTs
+                gt_loopback_in             <= gt_loopback_in_unsync;
+                gt_loopback_in_unsync      <= gmac_reg_phy_control_l(11 downto 0);
+            end if;
+        end if;
+    end process PhySettingsProcTx;
+    
+    PhySettingsProcRx : process(lbus_rx_clk)
+    begin
+        if rising_edge(lbus_rx_clk) then
+            if ((lbus_reset = '1') or (Reset = '1')) then
+                ctl_rx_force_resync <= '0';
+                -- Don't set receiver to test patterns
+                ctl_rx_test_pattern <= '0';
+            else
                 -- Don't force resynchronizations   
                 ctl_rx_force_resync        <= ctl_rx_force_resync_unsync;
                 ctl_rx_force_resync_unsync <= gmac_reg_phy_control_h(4);
                 -- Don't set receiver to test patterns
                 ctl_rx_test_pattern        <= ctl_rx_test_pattern_unsync;
                 ctl_rx_test_pattern_unsync <= gmac_reg_phy_control_h(5);
-                -- Set loop back to normal operation for all 4 MGTs
-                gt_loopback_in             <= gt_loopback_in_unsync;
-                gt_loopback_in_unsync      <= gmac_reg_phy_control_l(11 downto 0);
             end if;
         end if;
-    end process PhySettingsProc;
+    end process PhySettingsProcRx;
 
     RxCountersProc : process(lbus_tx_clk)
     begin
