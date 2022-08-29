@@ -694,6 +694,8 @@ begin
     
     ARPCacheClock <= (others => axis_clk);
 
+    ARPCacheClock <= (others => axis_clk);
+
     ARPCACHE_i : arpcache
         generic map(
             G_WRITE_DATA_WIDTH => G_ARP_DATA_WIDTH,

@@ -19,7 +19,9 @@ entity mac100gphy is
     generic(
         C_MAC_INSTANCE             : natural range 0 to 3 := 0;
         C_COURSE_PACKET_THROTTLING : boolean              := false;
-        C_USE_RS_FEC : boolean := false
+        C_USE_RS_FEC : boolean := false;
+        -- Number GTYE4_COMMON primitives to be instanced, for hardware layouts (like zcu216) using 2GTY per quad across 2 quads
+        C_N_COMMON : natural range 1 to 2 := 1
     );
     port(
         -- Ethernet reference clock for 156.25MHz
@@ -98,6 +100,7 @@ architecture rtl of mac100gphy is
     generic(
         C_USE_RS_FEC : boolean := false;
         C_INST_ID : integer 
+        C_N_COMMON : natural range 1 to 2 := 1
     );
         port(
             -- Reference clock to generate 100MHz from
@@ -341,6 +344,7 @@ begin
         generic map(
             C_USE_RS_FEC => C_USE_RS_FEC,
             C_INST_ID => C_MAC_INSTANCE
+            C_N_COMMON  => C_N_COMMON
         )
         port map(
             Clk100MHz                    => Clk100MHz,

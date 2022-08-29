@@ -1,19 +1,19 @@
---------------------------------------------------------------------------------
--- Company          : Kutleng Dynamic Electronics Systems (Pty) Ltd            -
--- Engineer         : Benjamin Hector Hlophe                                   -
---                                                                             -
--- Design Name      : CASPER BSP                                               -
--- Module Name      : gmacqsfptop - rtl                                       -
--- Project Name     : SKARAB2                                                  -
--- Target Devices   : N/A                                                      -
--- Tool Versions    : N/A                                                      -
--- Description      : This module instantiates one QSFP28+ ports with CMACs.   -
---                    TODO                                                     -
---                    Enable AXI Lite bus for statistics collection.           - 
--- Dependencies     : EthMACPHY100GQSFP4x                                      -
--- Revision History : V1.0 - Initial design                                    -
---                  : V1.1 - changed to Vivado 2019.2 and used AXI-S           -
---------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------
+-- Company          : Kutleng Dynamic Electronics Systems (Pty) Ltd                     -
+-- Engineer         : Benjamin Hector Hlophe                                            -
+--                                                                                      -
+-- Design Name      : CASPER BSP                                                        -
+-- Module Name      : gmacqsfptop - rtl                                                 -
+-- Project Name     : SKARAB2                                                           -
+-- Target Devices   : N/A                                                               -
+-- Tool Versions    : N/A                                                               -
+-- Description      : This module instantiates one QSFP28+ ports with CMACs.            -
+--                    TODO                                                              -
+--                    Enable AXI Lite bus for statistics collection.                    -
+-- Dependencies     : cmac_usplus_core_support wrapping cmac_usplus_core_support       -
+-- Revision History : V1.0 - Initial design                                             -
+--                  : V1.1 - changed to Vivado 2019.2 and used AXI-S                    -
+-----------------------------------------------------------------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -23,6 +23,8 @@ entity gmacqsfptop is
     generic(
         C_USE_RS_FEC : boolean := false;
         C_INST_ID : integer := 0
+        -- Number GTYE4_COMMON primitives to be instanced, for hardware layouts (like zcu216) using 2GTY per quad across 2 quads
+        C_N_COMMON : natural range 1 to 2 := 1
     );
     port(
         -- Reference clock to generate 100MHz from
@@ -93,7 +95,10 @@ entity gmacqsfptop is
 end entity gmacqsfptop;
 
 architecture rtl of gmacqsfptop is
-    component EthMACPHY100GQSFP4x_rsfec0 is
+    component cmac_usplus_core_support is
+        generic(
+            N_COMMON : natural range 1 to 2 := 1
+        );
         port(
             gt_rxp_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
             gt_rxn_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
@@ -343,9 +348,12 @@ architecture rtl of gmacqsfptop is
             stat_rx_rsfec_lane_mapping : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
             stat_rx_rsfec_uncorrected_cw_inc : OUT STD_LOGIC
         );
-    end component EthMACPHY100GQSFP4x_rsfec0;
+    end component cmac_usplus_core_support;
 
-    component EthMACPHY100GQSFP4x0 is
+    component cmac_usplus_core_support_norsfec is
+        generic(
+            N_COMMON : natural range 1 to 2 := 1
+        );
         port(
             gt_rxp_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
             gt_rxn_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
@@ -571,9 +579,9 @@ architecture rtl of gmacqsfptop is
             drp_rdy                        : out STD_LOGIC;
             drp_we                         : in  STD_LOGIC
         );
-    end component EthMACPHY100GQSFP4x0;
+    end component cmac_usplus_core_support_norsfec0;
 
-    component EthMACPHY100GQSFP4x_rsfec1 is
+    component cmac_usplus_core_support1 is
         port(
             gt_rxp_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
             gt_rxn_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
@@ -823,9 +831,9 @@ architecture rtl of gmacqsfptop is
             stat_rx_rsfec_lane_mapping : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
             stat_rx_rsfec_uncorrected_cw_inc : OUT STD_LOGIC
         );
-    end component EthMACPHY100GQSFP4x_rsfec1;
+    end component cmac_usplus_core_support1;
 
-    component EthMACPHY100GQSFP4x1 is
+    component cmac_usplus_core_support_norsfec1 is
         port(
             gt_rxp_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
             gt_rxn_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
@@ -1051,9 +1059,9 @@ architecture rtl of gmacqsfptop is
             drp_rdy                        : out STD_LOGIC;
             drp_we                         : in  STD_LOGIC
         );
-    end component EthMACPHY100GQSFP4x1;
+    end component cmac_usplus_core_support_norsfec1;
 
-    component EthMACPHY100GQSFP4x_rsfec2 is
+    component cmac_usplus_core_support2 is
         port(
             gt_rxp_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
             gt_rxn_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
@@ -1303,9 +1311,9 @@ architecture rtl of gmacqsfptop is
             stat_rx_rsfec_lane_mapping : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
             stat_rx_rsfec_uncorrected_cw_inc : OUT STD_LOGIC
         );
-    end component EthMACPHY100GQSFP4x_rsfec2;
+    end component cmac_usplus_core_support2;
 
-    component EthMACPHY100GQSFP4x2 is
+    component cmac_usplus_core_support_norsfec2 is
         port(
             gt_rxp_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
             gt_rxn_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
@@ -1531,9 +1539,9 @@ architecture rtl of gmacqsfptop is
             drp_rdy                        : out STD_LOGIC;
             drp_we                         : in  STD_LOGIC
         );
-    end component EthMACPHY100GQSFP4x2;
+    end component cmac_usplus_core_support_norsfec2;
 
-    component EthMACPHY100GQSFP4x_rsfec3 is
+    component cmac_usplus_core_support3 is
         port(
             gt_rxp_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
             gt_rxn_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
@@ -1783,9 +1791,9 @@ architecture rtl of gmacqsfptop is
             stat_rx_rsfec_lane_mapping : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
             stat_rx_rsfec_uncorrected_cw_inc : OUT STD_LOGIC
         );
-    end component EthMACPHY100GQSFP4x_rsfec3;
+    end component cmac_usplus_core_support3;
 
-    component EthMACPHY100GQSFP4x3 is
+    component cmac_usplus_core_support_norsfec3 is
         port(
             gt_rxp_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
             gt_rxn_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
@@ -2011,7 +2019,7 @@ architecture rtl of gmacqsfptop is
             drp_rdy                        : out STD_LOGIC;
             drp_we                         : in  STD_LOGIC
         );
-    end component EthMACPHY100GQSFP4x3;
+    end component cmac_usplus_core_support_norsfec3;
 
     component yellow_block_100gbe_udp_rx is
     port(
@@ -2261,7 +2269,7 @@ begin
 
     USE_FEC : if (C_USE_RS_FEC) generate
       USE_FEC0 : if (C_INST_ID = 0) generate
-        MACPHY_QSFP_i_rsfec : EthMACPHY100GQSFP4x_rsfec0
+        MACPHY_QSFP_i_rsfec : cmac_usplus_core_support0
             port map(
                 gt_rxp_in                     => qsfp_mgt_rx_p,
                 gt_rxn_in                     => qsfp_mgt_rx_n,
@@ -2494,7 +2502,7 @@ begin
             );
         end generate;
       USE_FEC1 : if (C_INST_ID = 1) generate
-        MACPHY_QSFP_i_rsfec : EthMACPHY100GQSFP4x_rsfec1
+        MACPHY_QSFP_i_rsfec : cmac_usplus_core_support1
             port map(
                 gt_rxp_in                     => qsfp_mgt_rx_p,
                 gt_rxn_in                     => qsfp_mgt_rx_n,
@@ -2727,7 +2735,7 @@ begin
             );
         end generate;
       USE_FEC2 : if (C_INST_ID = 2) generate
-        MACPHY_QSFP_i_rsfec : EthMACPHY100GQSFP4x_rsfec2
+        MACPHY_QSFP_i_rsfec : cmac_usplus_core_support2
             port map(
                 gt_rxp_in                     => qsfp_mgt_rx_p,
                 gt_rxn_in                     => qsfp_mgt_rx_n,
@@ -2960,7 +2968,7 @@ begin
             );
         end generate;
       USE_FEC3 : if (C_INST_ID = 3) generate
-        MACPHY_QSFP_i_rsfec : EthMACPHY100GQSFP4x_rsfec3
+        MACPHY_QSFP_i_rsfec : cmac_usplus_core_support3
             port map(
                 gt_rxp_in                     => qsfp_mgt_rx_p,
                 gt_rxn_in                     => qsfp_mgt_rx_n,
@@ -3195,7 +3203,7 @@ begin
     end generate;
     NO_USE_FEC : if (C_USE_RS_FEC = false) generate
       NO_USE_FEC0 : if (C_INST_ID = 0) generate
-        MACPHY_QSFP_i_norsfec : EthMACPHY100GQSFP4x0
+        MACPHY_QSFP_i_norsfec : cmac_usplus_core_support_norsfec0
             port map(
                 gt_rxp_in                     => qsfp_mgt_rx_p,
                 gt_rxn_in                     => qsfp_mgt_rx_n,
@@ -3423,12 +3431,276 @@ begin
             );
      end generate;
       NO_USE_FEC1 : if (C_INST_ID = 1) generate
-        MACPHY_QSFP_i_norsfec : EthMACPHY100GQSFP4x1
+        MACPHY_QSFP_i_norsfec : cmac_usplus_core_support_norsfec1
             port map(
                 gt_rxp_in                     => qsfp_mgt_rx_p,
                 gt_rxn_in                     => qsfp_mgt_rx_n,
                 gt_txp_out                    => qsfp_mgt_tx_p,
                 gt_txn_out                    => qsfp_mgt_tx_n,
+=======
+    end component cmac_usplus_core_support_norsfec;
+
+    component yellow_block_100gbe_udp_rx is
+        generic(
+            FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);
+            FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
+            FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0)
+        );
+        port(
+            yellow_block_user_clk    : in  STD_LOGIC;
+            max_rx_axi_clk           : in  STD_LOGIC;
+            -- -- Setup information
+            -- yellow_block_mac       : in  STD_LOGIC_VECTOR(47 downto 0);
+            -- yellow_block_ip        : in  STD_LOGIC_VECTOR(31 downto 0);
+            -- yellow_block_port      : in  STD_LOGIC_VECTOR(15 downto 0);
+            --Inputs from AXIS bus of the MAC side
+            axis_rx_tdata            : in  STD_LOGIC_VECTOR(511 downto 0);
+            axis_rx_tvalid           : in  STD_LOGIC;
+            axis_rx_tuser            : in  STD_LOGIC;
+            axis_rx_tkeep            : in  STD_LOGIC_VECTOR(63 downto 0);
+            axis_rx_tlast            : in  STD_LOGIC;
+
+            yellow_block_rx_data     : out  STD_LOGIC_VECTOR(511 downto 0);
+            yellow_block_rx_valid    : out  STD_LOGIC;
+            yellow_block_rx_eof      : out  STD_LOGIC;
+            yellow_block_rx_overrun  : out STD_LOGIC
+        );
+    end component  yellow_block_100gbe_udp_rx;
+
+    signal lbus_rx_clk         : STD_LOGIC;
+    signal lbus_tx_clk         : STD_LOGIC;
+    signal lbus_rx_reset       : STD_LOGIC;
+    signal lbus_tx_reset       : STD_LOGIC;
+    signal ctl_tx_send_idle    : STD_LOGIC;
+    signal ctl_tx_send_rfi     : STD_LOGIC;
+    signal ctl_tx_send_lfi     : STD_LOGIC;
+    signal ctl_tx_test_pattern : STD_LOGIC;
+    signal ctl_rx_force_resync : STD_LOGIC;
+    signal ctl_rx_test_pattern : STD_LOGIC;
+    signal gt_loopback_in      : STD_LOGIC_VECTOR(11 DOWNTO 0);
+    signal tx_preamblein       : STD_LOGIC_VECTOR(55 DOWNTO 0);
+
+    signal ctl_tx_send_idle_unsync    : STD_LOGIC;
+    signal ctl_tx_send_rfi_unsync     : STD_LOGIC;
+    signal ctl_tx_send_lfi_unsync     : STD_LOGIC;
+    signal ctl_tx_test_pattern_unsync : STD_LOGIC;
+    signal ctl_rx_force_resync_unsync : STD_LOGIC;
+    signal ctl_rx_test_pattern_unsync : STD_LOGIC;
+    signal gt_loopback_in_unsync      : STD_LOGIC_VECTOR(11 DOWNTO 0);
+
+    signal drp_clk                      : STD_LOGIC;
+    signal drp_addr                     : STD_LOGIC_VECTOR(9 DOWNTO 0);
+    signal drp_di                       : STD_LOGIC_VECTOR(15 DOWNTO 0);
+    signal drp_en                       : STD_LOGIC;
+    signal drp_we                       : STD_LOGIC;
+    constant C_COUNTERS_CLOCK_FREQUENCY : NATURAL                       := 322_265_625;
+    signal lRxOneSecondCounter          : NATURAL range 0 to C_COUNTERS_CLOCK_FREQUENCY - 1;
+    signal lTxOneSecondCounter          : NATURAL range 0 to C_COUNTERS_CLOCK_FREQUENCY - 1;
+    signal tx_packet_rate_counter       : NATURAL;
+    signal tx_packet_counter            : NATURAL;
+    signal tx_valid_rate_counter        : NATURAL;
+    signal tx_valid_counter             : NATURAL;
+    signal rx_packet_rate_counter       : NATURAL;
+    signal rx_packet_counter            : NATURAL;
+    signal rx_valid_rate_counter        : NATURAL;
+    signal rx_valid_counter             : NATURAL;
+    signal rx_bad_packet_counter        : NATURAL;
+    signal tx_sync_reg_counters_reset   : std_logic;
+    signal tx_unsync_reg_counters_reset : std_logic;
+    signal rx_sync_reg_counters_reset   : std_logic;
+    signal rx_unsync_reg_counters_reset : std_logic;
+    signal laxis_tx_tlast               : std_logic;
+    signal laxis_tx_tvalid              : std_logic;
+    signal laxis_tx_tuser               : std_logic;
+
+    signal gt_rxusrclk2                 : std_logic;
+    signal mac_rx_axis_rx_tdata         : std_logic_vector(511 downto 0);
+    signal mac_rx_axis_rx_tvalid        : std_logic;
+    signal mac_rx_axis_rx_tuser         : std_logic;
+    signal mac_rx_axis_rx_tkeep         : std_logic_vector(63 downto 0);
+    signal mac_rx_axis_rx_tlast         : std_logic;
+
+    -- Set core type to CPU_TX/RX_Enable := Enable
+    -- Core Revision := 1.0
+    -- Core Type :=5 := 100GbE   
+    constant C_CORE_TYPE                : std_logic_vector(15 downto 0) := X"1005";
+begin
+    axis_tx_clkout <= lbus_tx_clk;
+    lbus_rx_clk    <= axis_rx_clkin;
+    lbus_rx_reset  <= Reset or lbus_reset;
+    lbus_tx_reset  <= Reset or lbus_reset;
+    axis_tx_tlast  <= laxis_tx_tlast;
+    axis_tx_tvalid <= laxis_tx_tvalid;
+    axis_tx_tuser  <= laxis_tx_tuser;
+
+    -- We are not using the custom preamble
+    tx_preamblein <= (others => '0');
+    -- Tie down DRP as it is not used
+    drp_clk       <= '0';
+    drp_addr      <= (others => '0');
+    drp_di        <= (others => '0');
+    drp_en        <= '0';
+    drp_we        <= '0';
+
+    --Register MAP interface settings
+    gmac_reg_core_type    <= "0000000" & Enable & "0000000" & Enable & C_CORE_TYPE;
+    gmac_reg_phy_status_h <= (others => '0');
+    gmac_reg_phy_status_l <= (others => '0');
+
+    gmac_reg_tx_packet_count <= std_logic_vector(to_unsigned(tx_packet_counter, gmac_reg_tx_packet_count'length));
+    gmac_reg_tx_valid_count  <= std_logic_vector(to_unsigned(tx_valid_counter, gmac_reg_tx_valid_count'length));
+
+    gmac_reg_rx_packet_count     <= std_logic_vector(to_unsigned(rx_packet_counter, gmac_reg_rx_packet_count'length));
+    gmac_reg_rx_valid_count      <= std_logic_vector(to_unsigned(rx_valid_counter, gmac_reg_rx_valid_count'length));
+    gmac_reg_rx_bad_packet_count <= std_logic_vector(to_unsigned(rx_bad_packet_counter, gmac_reg_rx_bad_packet_count'length));
+
+    PhySettingsProc : process(lbus_tx_clk)
+    begin
+        if rising_edge(lbus_tx_clk) then
+            if ((tx_sync_reg_counters_reset = '1') or (lbus_reset = '1') or (Reset = '1')) then
+                -- Don't send idle frames 
+                ctl_tx_send_idle    <= '0';
+                -- Don't send remote fault indicators 
+                ctl_tx_send_rfi     <= '0';
+                -- Don't send local fault indicators       
+                ctl_tx_send_lfi     <= '0';
+                -- Don't set transmitter to send test patterns 
+                ctl_tx_test_pattern <= '0';
+                -- Don't force resynchronizations   
+                ctl_rx_force_resync <= '0';
+                -- Don't set receiver to test patterns
+                ctl_rx_test_pattern <= '0';
+                -- Set loop back to normal operation for all 4 MGTs
+                gt_loopback_in      <= X"000";
+            else
+                -- Don't send idle frames 
+                ctl_tx_send_idle_unsync    <= gmac_reg_phy_control_h(0);
+                ctl_tx_send_idle           <= ctl_tx_send_idle_unsync;
+                -- Don't send remote fault indicators 
+                ctl_tx_send_rfi            <= ctl_tx_send_rfi_unsync;
+                ctl_tx_send_rfi_unsync     <= gmac_reg_phy_control_h(1);
+                -- Don't send local fault indicators       
+                ctl_tx_send_lfi            <= ctl_tx_send_lfi_unsync;
+                ctl_tx_send_lfi_unsync     <= gmac_reg_phy_control_h(2);
+                -- Don't set transmitter to send test patterns 
+                ctl_tx_test_pattern        <= ctl_tx_test_pattern_unsync;
+                ctl_tx_test_pattern_unsync <= gmac_reg_phy_control_h(3);
+                -- Don't force resynchronizations   
+                ctl_rx_force_resync        <= ctl_rx_force_resync_unsync;
+                ctl_rx_force_resync_unsync <= gmac_reg_phy_control_h(4);
+                -- Don't set receiver to test patterns
+                ctl_rx_test_pattern        <= ctl_rx_test_pattern_unsync;
+                ctl_rx_test_pattern_unsync <= gmac_reg_phy_control_h(5);
+                -- Set loop back to normal operation for all 4 MGTs
+                gt_loopback_in             <= gt_loopback_in_unsync;
+                gt_loopback_in_unsync      <= gmac_reg_phy_control_l(11 downto 0);
+            end if;
+        end if;
+    end process PhySettingsProc;
+
+    RxCountersProc : process(lbus_tx_clk)
+    begin
+        if rising_edge(lbus_tx_clk) then
+            -- Safely cross the clock domain from the AXILite interface to LBUS
+            tx_unsync_reg_counters_reset <= gmac_reg_counters_reset;
+            tx_sync_reg_counters_reset   <= tx_unsync_reg_counters_reset;
+            if ((tx_sync_reg_counters_reset = '1') or (lbus_reset = '1') or (Reset = '1')) then
+                -- Reset all registers to zero
+                gmac_reg_rx_packet_rate <= (others => '0');
+                gmac_reg_rx_valid_rate  <= (others => '0');
+                rx_packet_rate_counter  <= 0;
+                rx_packet_counter       <= 0;
+                rx_valid_rate_counter   <= 0;
+                rx_valid_counter        <= 0;
+                rx_bad_packet_counter   <= 0;
+                lRxOneSecondCounter     <= 0;
+            else
+                -- One Second Timer clock
+                if (lRxOneSecondCounter = C_COUNTERS_CLOCK_FREQUENCY - 1) then
+                    -- This timer is used to generate a tick every one second
+                    gmac_reg_rx_packet_rate <= std_logic_vector(to_unsigned(rx_packet_rate_counter, gmac_reg_rx_packet_rate'length));
+                    gmac_reg_rx_valid_rate  <= std_logic_vector(to_unsigned(rx_valid_rate_counter, gmac_reg_rx_valid_rate'length));
+                    rx_packet_rate_counter  <= 0;
+                    rx_valid_rate_counter   <= 0;
+                    lRxOneSecondCounter     <= 0;
+                else
+                    if ((laxis_tx_tlast = '1') and (laxis_tx_tvalid = '1')) then
+                        -- Increment the packet counters
+                        rx_packet_rate_counter <= rx_packet_rate_counter + 1;
+                        rx_packet_counter      <= rx_packet_counter + 1;
+                    end if;
+
+                    if ((laxis_tx_tlast = '1') and (laxis_tx_tvalid = '1') and (laxis_tx_tuser = '0')) then
+                        -- Increment the valid counters
+                        rx_valid_rate_counter <= rx_valid_rate_counter + 1;
+                        rx_valid_counter      <= rx_valid_counter + 1;
+                    end if;
+                    if ((laxis_tx_tlast = '1') and (laxis_tx_tvalid = '1') and (laxis_tx_tuser = '1')) then
+                        -- Increment the bad packet counters
+                        rx_bad_packet_counter <= rx_bad_packet_counter + 1;
+                    end if;
+                    lRxOneSecondCounter <= lRxOneSecondCounter + 1;
+                end if;
+
+            end if;
+        end if;
+    end process RxCountersProc;
+
+    TxCountersProc : process(lbus_rx_clk)
+    begin
+        if rising_edge(lbus_rx_clk) then
+            -- Safely cross the clock domain from the AXILite interface to LBUS
+            rx_unsync_reg_counters_reset <= gmac_reg_counters_reset;
+            rx_sync_reg_counters_reset   <= rx_unsync_reg_counters_reset;
+            if ((rx_sync_reg_counters_reset = '1') or (lbus_reset = '1') or (Reset = '1')) then
+                -- Reset all registers to zero
+                gmac_reg_tx_packet_rate <= (others => '0');
+                gmac_reg_tx_valid_rate  <= (others => '0');
+                tx_packet_rate_counter  <= 0;
+                tx_packet_counter       <= 0;
+                tx_valid_rate_counter   <= 0;
+                tx_valid_counter        <= 0;
+                lTxOneSecondCounter     <= 0;
+            else
+                -- One Second Timer clock
+                if (lTxOneSecondCounter = C_COUNTERS_CLOCK_FREQUENCY - 1) then
+                    -- This timer is used to generate a tick every one second
+                    gmac_reg_tx_packet_rate <= std_logic_vector(to_unsigned(tx_packet_rate_counter, gmac_reg_tx_packet_rate'length));
+                    gmac_reg_tx_valid_rate  <= std_logic_vector(to_unsigned(tx_valid_rate_counter, gmac_reg_tx_valid_rate'length));
+                    tx_packet_rate_counter  <= 0;
+                    tx_valid_rate_counter   <= 0;
+                    lTxOneSecondCounter     <= 0;
+                else
+                    if ((axis_rx_tlast = '1') and (axis_rx_tvalid = '1')) then
+                        -- Increment the packet counters
+                        tx_packet_rate_counter <= tx_packet_rate_counter + 1;
+                        tx_packet_counter      <= tx_packet_counter + 1;
+                    end if;
+
+                    if ((axis_rx_tlast = '1') and (axis_rx_tvalid = '1') and (axis_rx_tuser = '0')) then
+                        -- Increment the valid counters
+                        tx_valid_rate_counter <= tx_valid_rate_counter + 1;
+                        tx_valid_counter      <= tx_valid_counter + 1;
+                    end if;
+
+                    lTxOneSecondCounter <= lTxOneSecondCounter + 1;
+                end if;
+
+            end if;
+        end if;
+    end process TxCountersProc;
+
+    USE_FEC: if (C_USE_RS_FEC) generate
+        MACPHY_QSFP_i_rsfec : cmac_usplus_core_support
+            generic map (
+              N_COMMON => C_N_COMMON
+            )
+            port map(
+                gt_rxp_in                      => qsfp_mgt_rx_p,
+                gt_rxn_in                      => qsfp_mgt_rx_n,
+                gt_txp_out                     => qsfp_mgt_tx_p,
+                gt_txn_out                     => qsfp_mgt_tx_n,
+>>>>>>> mb/rfsoc-100g
                 gt_txusrclk2                   => lbus_tx_clk,
                 gt_loopback_in                 => gt_loopback_in,
                 gt_rxrecclkout                 => open,
@@ -3651,7 +3923,10 @@ begin
             );
      end generate;
       NO_USE_FEC2 : if (C_INST_ID = 2) generate
-        MACPHY_QSFP_i_norsfec : EthMACPHY100GQSFP4x2
+        MACPHY_QSFP_i_norsfec : cmac_usplus_core_support_norsfec2
+            generic map (
+              N_COMMON => C_N_COMMON
+            )
             port map(
                 gt_rxp_in                     => qsfp_mgt_rx_p,
                 gt_rxn_in                     => qsfp_mgt_rx_n,
@@ -3879,7 +4154,7 @@ begin
             );
      end generate;
       NO_USE_FEC3 : if (C_INST_ID = 3) generate
-        MACPHY_QSFP_i_norsfec : EthMACPHY100GQSFP4x3
+        MACPHY_QSFP_i_norsfec : cmac_usplus_core_support_norsfec3
             port map(
                 gt_rxp_in                     => qsfp_mgt_rx_p,
                 gt_rxn_in                     => qsfp_mgt_rx_n,
@@ -4110,23 +4385,23 @@ begin
 
    yellow_block_100gbe_udp_rx_inst: yellow_block_100gbe_udp_rx
    port map(
-            fabric_mac  => fabric_mac,
-            fabric_ip   => fabric_ip,
-            fabric_port => fabric_port,
-            -- MAC received data (packet in) for UDP checking and processing
-            mac_rx_axi_clk          => lbus_tx_clk, -- = gt_txusrclk2
-            axis_rx_tdata           => mac_rx_axis_rx_tdata,
-            axis_rx_tvalid          => mac_rx_axis_rx_tvalid,
-            axis_rx_tuser           => mac_rx_axis_rx_tuser,
-            axis_rx_tkeep           => mac_rx_axis_rx_tkeep,
-            axis_rx_tlast           => mac_rx_axis_rx_tlast,
+       fabric_mac  => fabric_mac,
+       fabric_ip   => fabric_ip,
+       fabric_port => fabric_port,
+       -- MAC received data (packet in) for UDP checking and processing
+       mac_rx_axi_clk          => lbus_tx_clk, -- = gt_txusrclk2
+       axis_rx_tdata           => mac_rx_axis_rx_tdata,
+       axis_rx_tvalid          => mac_rx_axis_rx_tvalid,
+       axis_rx_tuser           => mac_rx_axis_rx_tuser,
+       axis_rx_tkeep           => mac_rx_axis_rx_tkeep,
+       axis_rx_tlast           => mac_rx_axis_rx_tlast,
 
-            -- MAC received data (UDP Packet in) with UDP payload stripped and sent to yellow block 100G RX Data interface
-            yellow_block_user_clk     => yellow_block_user_clk,
-            yellow_block_rx_data      => yellow_block_rx_data,
-            yellow_block_rx_valid     => yellow_block_rx_valid,
-            yellow_block_rx_eof       => yellow_block_rx_eof,
-            yellow_block_rx_overrun   => yellow_block_rx_overrun
-    );
+       -- MAC received data (UDP Packet in) with UDP payload stripped and sent to yellow block 100G RX Data interface
+       yellow_block_user_clk     => yellow_block_user_clk,
+       yellow_block_rx_data      => yellow_block_rx_data,
+       yellow_block_rx_valid     => yellow_block_rx_valid,
+       yellow_block_rx_eof       => yellow_block_rx_eof,
+       yellow_block_rx_overrun   => yellow_block_rx_overrun
+   );
 
 end architecture rtl;

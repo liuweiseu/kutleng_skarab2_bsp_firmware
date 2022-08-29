@@ -27,6 +27,8 @@ entity casper100gethernetblock_no_cpu is
         G_INCLUDE_ICAP               : boolean              := false;
         -- Use RS FEC in MAC IP
         G_USE_RS_FEC                 : boolean              := false;
+        -- Number GTYE4_COMMON primitives to be instanced, for hardware layouts (like zcu216) using 2GTY per quad across 2 quads
+        G_N_COMMON                   : natural range 1 to 2 := 1;
         -- Streaming data size (must be 512)
         G_AXIS_DATA_WIDTH            : natural              := 512;
         -- Number of UDP Streaming Data Server Modules 
@@ -353,6 +355,7 @@ architecture rtl of casper100gethernetblock_no_cpu is
         generic(
             C_MAC_INSTANCE : natural range 0 to 3 := 0;
             C_USE_RS_FEC : boolean := false
+            C_N_COMMON : natural range 1 to 2 := 1
         );
         port(
             -- Ethernet reference clock for 156.25MHz
@@ -519,6 +522,7 @@ begin
         generic map(
             C_MAC_INSTANCE => G_MAC_INSTANCE,
             C_USE_RS_FEC => G_USE_RS_FEC
+            C_N_COMMON  => G_N_COMMON
         )
         port map(
             Clk100MHz                    => RefClk100MHz,
