@@ -4117,31 +4117,25 @@ begin
      end generate;
    end generate;
 
-    component yellow_block_100gbe_udp_rx is
-        generic(
-            FABRIC_MAC : STD_LOGIC_VECTOR(47 downto 0);
-            FABRIC_IP : STD_LOGIC_VECTOR(31 downto 0);
-            FABRIC_PORT : STD_LOGIC_VECTOR(15 downto 0)
-        );
-        port(
-            yellow_block_user_clk    : in  STD_LOGIC;
-            max_rx_axi_clk           : in  STD_LOGIC;
-            -- -- Setup information
-            -- yellow_block_mac       : in  STD_LOGIC_VECTOR(47 downto 0);
-            -- yellow_block_ip        : in  STD_LOGIC_VECTOR(31 downto 0);
-            -- yellow_block_port      : in  STD_LOGIC_VECTOR(15 downto 0);
-            --Inputs from AXIS bus of the MAC side
-            axis_rx_tdata            : in  STD_LOGIC_VECTOR(511 downto 0);
-            axis_rx_tvalid           : in  STD_LOGIC;
-            axis_rx_tuser            : in  STD_LOGIC;
-            axis_rx_tkeep            : in  STD_LOGIC_VECTOR(63 downto 0);
-            axis_rx_tlast            : in  STD_LOGIC;
+   yellow_block_100gbe_udp_rx_inst: yellow_block_100gbe_udp_rx
+   port map(
+            fabric_mac  => fabric_mac,
+            fabric_ip   => fabric_ip,
+            fabric_port => fabric_port,
+            -- MAC received data (packet in) for UDP checking and processing
+            mac_rx_axi_clk          => lbus_tx_clk, -- = gt_txusrclk2
+            axis_rx_tdata           => mac_rx_axis_rx_tdata,
+            axis_rx_tvalid          => mac_rx_axis_rx_tvalid,
+            axis_rx_tuser           => mac_rx_axis_rx_tuser,
+            axis_rx_tkeep           => mac_rx_axis_rx_tkeep,
+            axis_rx_tlast           => mac_rx_axis_rx_tlast,
 
-            yellow_block_rx_data     : out  STD_LOGIC_VECTOR(511 downto 0);
-            yellow_block_rx_valid    : out  STD_LOGIC;
-            yellow_block_rx_eof      : out  STD_LOGIC;
-            yellow_block_rx_overrun  : out STD_LOGIC
-        );
-    end component  yellow_block_100gbe_udp_rx;
+            -- MAC received data (UDP Packet in) with UDP payload stripped and sent to yellow block 100G RX Data interface
+            yellow_block_user_clk     => yellow_block_user_clk,
+            yellow_block_rx_data      => yellow_block_rx_data,
+            yellow_block_rx_valid     => yellow_block_rx_valid,
+            yellow_block_rx_eof       => yellow_block_rx_eof,
+            yellow_block_rx_overrun   => yellow_block_rx_overrun
+    );
 
 end architecture rtl;
