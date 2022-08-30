@@ -354,7 +354,7 @@ architecture rtl of casper100gethernetblock_no_cpu is
     component mac100gphy is
         generic(
             C_MAC_INSTANCE : natural range 0 to 3 := 0;
-            C_USE_RS_FEC : boolean := false
+            C_USE_RS_FEC : boolean := false;
             C_N_COMMON : natural range 1 to 2 := 1
         );
         port(
@@ -521,7 +521,7 @@ begin
     GMAC_i : mac100gphy
         generic map(
             C_MAC_INSTANCE => G_MAC_INSTANCE,
-            C_USE_RS_FEC => G_USE_RS_FEC
+            C_USE_RS_FEC => G_USE_RS_FEC,
             C_N_COMMON  => G_N_COMMON
         )
         port map(

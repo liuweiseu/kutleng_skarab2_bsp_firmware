@@ -99,7 +99,7 @@ architecture rtl of mac100gphy is
     component gmacqsfptop is
     generic(
         C_USE_RS_FEC : boolean := false;
-        C_INST_ID : integer 
+        C_INST_ID : integer;
         C_N_COMMON : natural range 1 to 2 := 1
     );
         port(
@@ -343,7 +343,7 @@ begin
     CMAC0_i : gmacqsfptop
         generic map(
             C_USE_RS_FEC => C_USE_RS_FEC,
-            C_INST_ID => C_MAC_INSTANCE
+            C_INST_ID => C_MAC_INSTANCE,
             C_N_COMMON  => C_N_COMMON
         )
         port map(
