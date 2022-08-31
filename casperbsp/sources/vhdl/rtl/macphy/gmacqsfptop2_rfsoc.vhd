@@ -1289,7 +1289,6 @@ begin
                 drp_we                         => drp_we
             );
      end generate;
-   end generate;
 
    yellow_block_100gbe_udp_rx_inst: yellow_block_100gbe_udp_rx
    port map(
