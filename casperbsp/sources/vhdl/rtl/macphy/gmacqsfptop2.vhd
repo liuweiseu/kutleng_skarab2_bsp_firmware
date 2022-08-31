@@ -95,7 +95,7 @@ entity gmacqsfptop is
 end entity gmacqsfptop;
 
 architecture rtl of gmacqsfptop is
-    component cmac_usplus_core_support0 is
+    component EthMACPHY100GQSFP4x_rsfec0 is
         generic(
             N_COMMON : natural range 1 to 2 := 1
         );
@@ -348,9 +348,9 @@ architecture rtl of gmacqsfptop is
             stat_rx_rsfec_lane_mapping : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
             stat_rx_rsfec_uncorrected_cw_inc : OUT STD_LOGIC
         );
-    end component cmac_usplus_core_support0;
+    end component EthMACPHY100GQSFP4x_rsfec0;
 
-    component cmac_usplus_core_support_norsfec0 is
+    component EthMACPHY100GQSFP4x0;
         generic(
             N_COMMON : natural range 1 to 2 := 1
         );
@@ -579,9 +579,9 @@ architecture rtl of gmacqsfptop is
             drp_rdy                        : out STD_LOGIC;
             drp_we                         : in  STD_LOGIC
         );
-    end component cmac_usplus_core_support_norsfec0;
+    end component EthMACPHY100GQSFP4x0;
 
-    component cmac_usplus_core_support1 is
+    component EthMACPHY100GQSFP4x_rsfec1 is
         port(
             gt_rxp_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
             gt_rxn_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
@@ -831,9 +831,9 @@ architecture rtl of gmacqsfptop is
             stat_rx_rsfec_lane_mapping : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
             stat_rx_rsfec_uncorrected_cw_inc : OUT STD_LOGIC
         );
-    end component cmac_usplus_core_support1;
+    end component EthMACPHY100GQSFP4x_rsfec1;
 
-    component cmac_usplus_core_support_norsfec1 is
+    component EthMACPHY100GQSFP4x1 is
         port(
             gt_rxp_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
             gt_rxn_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
@@ -1059,9 +1059,9 @@ architecture rtl of gmacqsfptop is
             drp_rdy                        : out STD_LOGIC;
             drp_we                         : in  STD_LOGIC
         );
-    end component cmac_usplus_core_support_norsfec1;
+    end component EthMACPHY100GQSFP4x1;
 
-    component cmac_usplus_core_support2 is
+    component EthMACPHY100GQSFP4x_rsfec2 is
         port(
             gt_rxp_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
             gt_rxn_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
@@ -1311,9 +1311,9 @@ architecture rtl of gmacqsfptop is
             stat_rx_rsfec_lane_mapping : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
             stat_rx_rsfec_uncorrected_cw_inc : OUT STD_LOGIC
         );
-    end component cmac_usplus_core_support2;
+    end component EthMACPHY100GQSFP4x_rsfec2;
 
-    component cmac_usplus_core_support_norsfec2 is
+    component EthMACPHY100GQSFP4x2 is
         port(
             gt_rxp_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
             gt_rxn_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
@@ -1539,9 +1539,9 @@ architecture rtl of gmacqsfptop is
             drp_rdy                        : out STD_LOGIC;
             drp_we                         : in  STD_LOGIC
         );
-    end component cmac_usplus_core_support_norsfec2;
+    end component EthMACPHY100GQSFP4x2;
 
-    component cmac_usplus_core_support3 is
+    component EthMACPHY100GQSFP4x_rsfec3 is
         port(
             gt_rxp_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
             gt_rxn_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
@@ -1791,9 +1791,9 @@ architecture rtl of gmacqsfptop is
             stat_rx_rsfec_lane_mapping : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
             stat_rx_rsfec_uncorrected_cw_inc : OUT STD_LOGIC
         );
-    end component cmac_usplus_core_support3;
+    end component EthMACPHY100GQSFP4x_rsfec3;
 
-    component cmac_usplus_core_support_norsfec3 is
+    component EthMACPHY100GQSFP4x3 is
         port(
             gt_rxp_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
             gt_rxn_in                     : in  STD_LOGIC_VECTOR(3 downto 0);
@@ -2019,7 +2019,7 @@ architecture rtl of gmacqsfptop is
             drp_rdy                        : out STD_LOGIC;
             drp_we                         : in  STD_LOGIC
         );
-    end component cmac_usplus_core_support_norsfec3;
+    end component EthMACPHY100GQSFP4x3;
 
     component yellow_block_100gbe_udp_rx is
     port(
@@ -2269,7 +2269,7 @@ begin
 
     USE_FEC : if (C_USE_RS_FEC) generate
       USE_FEC0 : if (C_INST_ID = 0) generate
-        MACPHY_QSFP_i_rsfec : cmac_usplus_core_support0
+        MACPHY_QSFP_i_rsfec : EthMACPHY100GQSFP4x_rsfec0
             port map(
                 gt_rxp_in                     => qsfp_mgt_rx_p,
                 gt_rxn_in                     => qsfp_mgt_rx_n,
@@ -2502,7 +2502,7 @@ begin
             );
         end generate;
       USE_FEC1 : if (C_INST_ID = 1) generate
-        MACPHY_QSFP_i_rsfec : cmac_usplus_core_support1
+        MACPHY_QSFP_i_rsfec : EthMACPHY100GQSFP4x_rsfec1
             port map(
                 gt_rxp_in                     => qsfp_mgt_rx_p,
                 gt_rxn_in                     => qsfp_mgt_rx_n,
@@ -2735,7 +2735,7 @@ begin
             );
         end generate;
       USE_FEC2 : if (C_INST_ID = 2) generate
-        MACPHY_QSFP_i_rsfec : cmac_usplus_core_support2
+        MACPHY_QSFP_i_rsfec : EthMACPHY100GQSFP4x_rsfec2
             port map(
                 gt_rxp_in                     => qsfp_mgt_rx_p,
                 gt_rxn_in                     => qsfp_mgt_rx_n,
@@ -2968,7 +2968,7 @@ begin
             );
         end generate;
       USE_FEC3 : if (C_INST_ID = 3) generate
-        MACPHY_QSFP_i_rsfec : cmac_usplus_core_support3
+        MACPHY_QSFP_i_rsfec : EthMACPHY100GQSFP4x_rsfec3
             port map(
                 gt_rxp_in                     => qsfp_mgt_rx_p,
                 gt_rxn_in                     => qsfp_mgt_rx_n,
@@ -3203,7 +3203,7 @@ begin
     end generate;
     NO_USE_FEC : if (C_USE_RS_FEC = false) generate
       NO_USE_FEC0 : if (C_INST_ID = 0) generate
-        MACPHY_QSFP_i_norsfec : cmac_usplus_core_support_norsfec0
+        MACPHY_QSFP_i_norsfec : EthMACPHY100GQSFP4x0
             port map(
                 gt_rxp_in                     => qsfp_mgt_rx_p,
                 gt_rxn_in                     => qsfp_mgt_rx_n,
@@ -3432,7 +3432,7 @@ begin
      end generate;
 
       NO_USE_FEC1 : if (C_INST_ID = 1) generate
-        MACPHY_QSFP_i_norsfec : cmac_usplus_core_support_norsfec1
+        MACPHY_QSFP_i_norsfec : EthMACPHY100GQSFP4x1
             port map(
                 gt_rxp_in                     => qsfp_mgt_rx_p,
                 gt_rxn_in                     => qsfp_mgt_rx_n,
@@ -3660,7 +3660,7 @@ begin
             );
      end generate;
       NO_USE_FEC2 : if (C_INST_ID = 2) generate
-        MACPHY_QSFP_i_norsfec : cmac_usplus_core_support_norsfec2
+        MACPHY_QSFP_i_norsfec : EthMACPHY100GQSFP4x2
             port map(
                 gt_rxp_in                     => qsfp_mgt_rx_p,
                 gt_rxn_in                     => qsfp_mgt_rx_n,
@@ -3888,7 +3888,7 @@ begin
             );
      end generate;
       NO_USE_FEC3 : if (C_INST_ID = 3) generate
-        MACPHY_QSFP_i_norsfec : cmac_usplus_core_support_norsfec3
+        MACPHY_QSFP_i_norsfec : EthMACPHY100GQSFP4x3
             port map(
                 gt_rxp_in                     => qsfp_mgt_rx_p,
                 gt_rxn_in                     => qsfp_mgt_rx_n,
