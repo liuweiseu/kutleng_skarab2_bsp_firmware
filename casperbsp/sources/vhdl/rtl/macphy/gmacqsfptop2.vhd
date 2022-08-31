@@ -350,7 +350,7 @@ architecture rtl of gmacqsfptop is
         );
     end component EthMACPHY100GQSFP4x_rsfec0;
 
-    component EthMACPHY100GQSFP4x0;
+    component EthMACPHY100GQSFP4x0 is
         generic(
             N_COMMON : natural range 1 to 2 := 1
         );
