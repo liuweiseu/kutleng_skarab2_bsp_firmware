@@ -10,7 +10,7 @@
 -- Description      : This module instantiates one QSFP28+ ports with CMACs.            -
 --                    TODO                                                              -
 --                    Enable AXI Lite bus for statistics collection.                    -
--- Dependencies     : cmac_usplus_core_support wrapping cmac_usplus_core_support       -
+-- Dependencies     : cmac_usplus_core_support wrapping EthMACPHY100GQSFP4x_rsfec       -
 -- Revision History : V1.0 - Initial design                                             -
 --                  : V1.1 - changed to Vivado 2019.2 and used AXI-S                    -
 -----------------------------------------------------------------------------------------
@@ -829,6 +829,9 @@ begin
 
     USE_FEC : if (C_USE_RS_FEC) generate
         MACPHY_QSFP_i_rsfec : cmac_usplus_core_support
+            generic map (
+              N_COMMON => C_N_COMMON
+            )
             port map(
                 gt_rxp_in                     => qsfp_mgt_rx_p,
                 gt_rxn_in                     => qsfp_mgt_rx_n,
@@ -1063,6 +1066,9 @@ begin
 
     NO_USE_FEC : if (C_USE_RS_FEC = false) generate
         MACPHY_QSFP_i_norsfec : cmac_usplus_core_support_norsfec
+            generic map (
+              N_COMMON => C_N_COMMON
+            )
             port map(
                 gt_rxp_in                     => qsfp_mgt_rx_p,
                 gt_rxn_in                     => qsfp_mgt_rx_n,
