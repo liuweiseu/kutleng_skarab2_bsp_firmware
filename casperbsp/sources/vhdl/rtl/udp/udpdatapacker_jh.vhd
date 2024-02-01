@@ -674,7 +674,7 @@ state_val <= "001";
                                 --lDestinationIPAddress  <= byteswap(dest_ip_fifo_out);
                                 lDestinationIPAddress  <= dest_ip_fifo_out;
                                 lIsMulticast <= '0';
-                            elsif dest_ip_fifo_out(31 downto 31-3) = "111" then
+                            elsif dest_ip_fifo_out(31 downto 31-3) = "1110" then
                                 -- Multicast IP.
                                 lIsMulticast <= '1';
                                 --lDestinationIPAddress  <= byteswap(dest_ip_fifo_out);
