@@ -719,7 +719,9 @@ state_val <= "001";
                         if (lIsMulticast = '0') then
                             lPacketData(6*8  - 1 downto 0*8) <= ARPReadData(47 downto 0);
                         else
-                            lPacketData(6*8  - 1 downto 0*8) <= "0000000100000000010111100" & lDestinationIPAddress(22 downto 0);
+                            -- byte swap the mac address as it is created
+                            lPacketData(6*8  - 1 downto 0*8) <= lDestinationIPAddress(7 downto 0) & lDestinationIpAddress(15 downto 8) & "0" & lDestinationIpAddress(22 downto 16) & "01011110" & "00000000" & "00000001";
+                            --lPacketData(6*8  - 1 downto 0*8) <= "0000000100000000010111100" & lDestinationIPAddress(22 downto 0);
                         end if;
                         lPacketData(12*8 - 1 downto 6*8) <= byteswap(lSourceMACAddress);
                         lPacketData(14*8 - 1 downto 12*8) <= byteswap(C_RESPONSE_ETHER_TYPE);
