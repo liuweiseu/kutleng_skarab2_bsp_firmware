@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 -- Company          : Kutleng Dynamic Electronics Systems (Pty) Ltd            -
--- Engineer         : Benjamin Hector Hlophe                                   -
+-- Engineer         : Benjamin Hector Hlophe, Wei Liu                          -
 --                                                                             -
 -- Design Name      : CASPER BSP                                               -
 -- Module Name      : udpstreamingapp - rtl                                    -
@@ -11,6 +11,7 @@
 --                                                                             -
 -- Dependencies     : macifudpserver,udpdatastripper,udpdatapacker             -
 -- Revision History : V1.0 - Initial design                                    -
+--                    V1.1 - Added support for 400G Ethernet                   -
 --------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
@@ -25,7 +26,7 @@ entity udpstreamingapp is
         G_ADDR_WIDTH      : natural := 8
     );
     port(
-        -- Axis clock is the Ethernet module clock running at 322.625MHz
+        -- Axis clock is the Ethernet module clock running at 390.625MHz(400G)/322.625MHz(100G)
         axis_clk                                    : in  STD_LOGIC;
         -- Axis reset is the global synchronous reset to the highest clock
         axis_reset                                  : in  STD_LOGIC;
@@ -116,7 +117,8 @@ architecture rtl of udpstreamingapp is
         generic(
             G_SLOT_WIDTH : natural := 4;
             -- The address width is log2(2048/(512/8))=5 bits wide
-            G_ADDR_WIDTH : natural := 5
+            G_ADDR_WIDTH : natural := 5;
+            G_DATA_WIDTH : natural := 512
         );
         port(
             axis_clk                       : in  STD_LOGIC;
@@ -138,8 +140,8 @@ architecture rtl of udpstreamingapp is
             RecvRingBufferDataRead         : in  STD_LOGIC;
             -- Enable[0] is a special bit (we assume always 1 when packet is valid)
             -- we use it to save TLAST
-            RecvRingBufferDataEnable       : out STD_LOGIC_VECTOR(63 downto 0);
-            RecvRingBufferDataOut          : out STD_LOGIC_VECTOR(511 downto 0);
+            RecvRingBufferDataEnable       : out STD_LOGIC_VECTOR((G_AXIS_DATA_WIDTH / 8) - 1 downto 0);
+            RecvRingBufferDataOut          : out STD_LOGIC_VECTOR(G_AXIS_DATA_WIDTH - 1 downto 0);
             RecvRingBufferAddress          : in  STD_LOGIC_VECTOR(G_ADDR_WIDTH - 1 downto 0);
             -- Packet Readout in addressed bus format
             SenderRingBufferSlotID         : out STD_LOGIC_VECTOR(G_SLOT_WIDTH - 1 downto 0);
@@ -150,22 +152,22 @@ architecture rtl of udpstreamingapp is
             SenderRingBufferDataRead       : out STD_LOGIC;
             -- Enable[0] is a special bit (we assume always 1 when packet is valid)
             -- we use it to save TLAST
-            SenderRingBufferDataEnable     : in  STD_LOGIC_VECTOR(63 downto 0);
-            SenderRingBufferDataIn         : in  STD_LOGIC_VECTOR(511 downto 0);
+            SenderRingBufferDataEnable     : in  STD_LOGIC_VECTOR((G_AXIS_DATA_WIDTH / 8) - 1 downto 0);
+            SenderRingBufferDataIn         : in  STD_LOGIC_VECTOR(G_AXIS_DATA_WIDTH - 1 downto 0);
             SenderRingBufferAddress        : out STD_LOGIC_VECTOR(G_ADDR_WIDTH - 1 downto 0);
             --Inputs from AXIS bus of the MAC side
             --Outputs to AXIS bus MAC side 
             axis_tx_tpriority              : out STD_LOGIC_VECTOR(G_SLOT_WIDTH - 1 downto 0);
-            axis_tx_tdata                  : out STD_LOGIC_VECTOR(511 downto 0);
+            axis_tx_tdata                  : out STD_LOGIC_VECTOR(G_AXIS_DATA_WIDTH - 1 downto 0);
             axis_tx_tvalid                 : out STD_LOGIC;
             axis_tx_tready                 : in  STD_LOGIC;
-            axis_tx_tkeep                  : out STD_LOGIC_VECTOR(63 downto 0);
+            axis_tx_tkeep                  : out STD_LOGIC_VECTOR((G_AXIS_DATA_WIDTH / 8) - 1 downto 0);
             axis_tx_tlast                  : out STD_LOGIC;
             --Inputs from AXIS bus of the MAC side
-            axis_rx_tdata                  : in  STD_LOGIC_VECTOR(511 downto 0);
+            axis_rx_tdata                  : in  STD_LOGIC_VECTOR(G_AXIS_DATA_WIDTH - 1 downto 0);
             axis_rx_tvalid                 : in  STD_LOGIC;
             axis_rx_tuser                  : in  STD_LOGIC;
-            axis_rx_tkeep                  : in  STD_LOGIC_VECTOR(63 downto 0);
+            axis_rx_tkeep                  : in  STD_LOGIC_VECTOR((G_AXIS_DATA_WIDTH / 8) - 1 downto 0);
             axis_rx_tlast                  : in  STD_LOGIC
         );
     end component macifudpserver;
@@ -173,7 +175,8 @@ architecture rtl of udpstreamingapp is
     component udpdatastripper is
         generic(
             G_SLOT_WIDTH : natural := 4;
-            G_ADDR_WIDTH : natural := 5
+            G_ADDR_WIDTH : natural := 5;
+            G_DATA_WIDTH : natural := 512
         );
         port(
             axis_clk                 : in  STD_LOGIC;
@@ -187,27 +190,28 @@ architecture rtl of udpstreamingapp is
             RecvRingBufferDataRead   : out STD_LOGIC;
             -- Enable[0] is a special bit (we assume always 1 when packet is valid)
             -- we use it to save TLAST
-            RecvRingBufferDataEnable : in  STD_LOGIC_VECTOR(63 downto 0);
-            RecvRingBufferDataOut    : in  STD_LOGIC_VECTOR(511 downto 0);
+            RecvRingBufferDataEnable : in  STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
+            RecvRingBufferDataOut    : in  STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
             RecvRingBufferAddress    : out STD_LOGIC_VECTOR(G_ADDR_WIDTH - 1 downto 0);
             --
             UDPPacketLength          : out STD_LOGIC_VECTOR(15 downto 0);
             --
             axis_tuser               : out STD_LOGIC;
-            axis_tdata               : out STD_LOGIC_VECTOR(511 downto 0);
+            axis_tdata               : out STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
             axis_tvalid              : out STD_LOGIC;
             axis_tready              : in  STD_LOGIC;
-            axis_tkeep               : out STD_LOGIC_VECTOR(63 downto 0);
+            axis_tkeep               : out STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
             axis_tlast               : out STD_LOGIC
         );
     end component udpdatastripper;
 
-    component udpdatapacker_jh is
+    component udpdatapacker is
         generic(
             G_SLOT_WIDTH      : natural := 4;
             G_ARP_CACHE_ASIZE : natural := 13;
             G_ARP_DATA_WIDTH  : natural := 32; -- The address width is log2(2048/(512/8))=5 bits wide
-            G_ADDR_WIDTH      : natural := 5
+            G_ADDR_WIDTH      : natural := 5;
+            G_AXIS_DATA_WIDTH : natural := 512
         );
         port(
             axis_clk                       : in  STD_LOGIC;
@@ -249,13 +253,14 @@ architecture rtl of udpstreamingapp is
             axis_tkeep                     : in  STD_LOGIC_VECTOR((G_AXIS_DATA_WIDTH / 8) - 1 downto 0);
             axis_tlast                     : in  STD_LOGIC
         );
-    end component udpdatapacker_jh;
+    end component udpdatapacker;
+
     signal UDPRXRingBufferSlotID         : STD_LOGIC_VECTOR(G_SLOT_WIDTH - 1 downto 0);
     signal UDPRXRingBufferSlotClear      : STD_LOGIC;
     signal UDPRXRingBufferSlotStatus     : STD_LOGIC;
     signal UDPRXRingBufferDataRead       : STD_LOGIC;
-    signal UDPRXRingBufferDataEnable     : STD_LOGIC_VECTOR(63 downto 0);
-    signal UDPRXRingBufferData           : STD_LOGIC_VECTOR(511 downto 0);
+    signal UDPRXRingBufferDataEnable     : STD_LOGIC_VECTOR((G_AXIS_DATA_WIDTH / 8) - 1 downto 0);
+    signal UDPRXRingBufferData           : STD_LOGIC_VECTOR(G_AXIS_DATA_WIDTH - 1 downto 0);
     signal UDPRXRingBufferAddress        : STD_LOGIC_VECTOR(G_ADDR_WIDTH - 1 downto 0);
     signal UDPTXRingBufferSlotID         : STD_LOGIC_VECTOR(G_SLOT_WIDTH - 1 downto 0);
     signal UDPTXRingBufferSlotClear      : STD_LOGIC;
@@ -263,8 +268,8 @@ architecture rtl of udpstreamingapp is
     signal UDPTXRingBufferSlotTypeStatus : STD_LOGIC;
     signal UDPTXRingBufferSlotsFilled    : STD_LOGIC_VECTOR(G_SLOT_WIDTH - 1 downto 0);
     signal UDPTXRingBufferDataRead       : STD_LOGIC;
-    signal UDPTXRingBufferDataEnable     : STD_LOGIC_VECTOR(63 downto 0);
-    signal UDPTXRingBufferData           : STD_LOGIC_VECTOR(511 downto 0);
+    signal UDPTXRingBufferDataEnable     : STD_LOGIC_VECTOR((G_AXIS_DATA_WIDTH / 8) - 1 downto 0);
+    signal UDPTXRingBufferData           : STD_LOGIC_VECTOR(G_AXIS_DATA_WIDTH - 1 downto 0);
     signal UDPTXRingBufferAddress        : STD_LOGIC_VECTOR(G_ADDR_WIDTH - 1 downto 0);
 
 --    component axis_ila_server is
@@ -305,7 +310,8 @@ begin
     UDPRECEIVER_i : udpdatastripper
         generic map(
             G_SLOT_WIDTH => G_SLOT_WIDTH,
-            G_ADDR_WIDTH => G_ADDR_WIDTH
+            G_ADDR_WIDTH => G_ADDR_WIDTH,
+            G_DATA_WIDTH => G_AXIS_DATA_WIDTH
         )
         port map(
             axis_clk                 => axis_streaming_data_clk,
@@ -332,12 +338,13 @@ begin
             axis_tlast               => axis_streaming_data_rx_tlast
         );
 
-    UDPAPPSENDER_i : udpdatapacker_jh
+    UDPAPPSENDER_i : udpdatapacker
         generic map(
             G_SLOT_WIDTH      => G_SLOT_WIDTH,
             G_ARP_CACHE_ASIZE => G_ARP_CACHE_ASIZE,
             G_ARP_DATA_WIDTH  => G_ARP_DATA_WIDTH,
-            G_ADDR_WIDTH      => G_ADDR_WIDTH
+            G_ADDR_WIDTH      => G_ADDR_WIDTH,
+            G_AXIS_DATA_WIDTH => G_AXIS_DATA_WIDTH
         )
         port map(
             axis_clk                       => axis_clk,
@@ -402,7 +409,8 @@ begin
     UDPDATAApp_i : macifudpserver
         generic map(
             G_SLOT_WIDTH => G_SLOT_WIDTH,
-            G_ADDR_WIDTH => G_ADDR_WIDTH
+            G_ADDR_WIDTH => G_ADDR_WIDTH,
+            G_DATA_WIDTH => G_AXIS_DATA_WIDTH
         )
         port map(
             axis_clk                       => axis_clk,

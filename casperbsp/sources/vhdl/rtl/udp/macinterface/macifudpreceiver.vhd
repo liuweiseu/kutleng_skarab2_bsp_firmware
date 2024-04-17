@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 -- Company          : Kutleng Dynamic Electronics Systems (Pty) Ltd            -
--- Engineer         : Benjamin Hector Hlophe                                   -
+-- Engineer         : Benjamin Hector Hlophe, Wei Liu                          -
 --                                                                             -
 -- Design Name      : CASPER BSP                                               -
 -- Module Name      : macifudpreceiver - rtl                                   -
@@ -15,6 +15,7 @@
 --                                                                             -
 -- Dependencies     : packetringbuffer                                         -
 -- Revision History : V1.0 - Initial design                                    -
+--                    V1.1 - Added support for 400G Ethernet                   -
 --------------------------------------------------------------------------------
 
 library ieee;
@@ -27,11 +28,12 @@ entity macifudpreceiver is
         -- For normal maximum ethernet frame packet size = ceil(1522)=2048 Bytes 
         -- The address width is log2(2048/(512/8))=5 bits wide
         -- 1 x (16KBRAM) per slot = 1 x 4 = 4 (16K BRAMS)/ 2 (32K BRAMS)   
-        G_ADDR_WIDTH : natural := 5
+        G_ADDR_WIDTH : natural := 5;
         -- For 9600 Jumbo ethernet frame packet size = ceil(9600)=16384 Bytes 
         -- The address width is log2(16384/(512/8))=8 bits wide
         -- 64 x (16KBRAM) per slot = 32 x 4 = 128 (32K BRAMS)! 
         -- G_ADDR_WIDTH      : natural                          := 5
+        G_DATA_WIDTH : natural := 512
     );
     port(
         axis_clk                 : in  STD_LOGIC;
@@ -53,14 +55,14 @@ entity macifudpreceiver is
         RingBufferDataRead       : in  STD_LOGIC;
         -- Enable[0] is a special bit (we assume always 1 when packet is valid)
         -- we use it to save TLAST
-        RingBufferDataEnable     : out STD_LOGIC_VECTOR(63 downto 0);
-        RingBufferDataOut        : out STD_LOGIC_VECTOR(511 downto 0);
+        RingBufferDataEnable     : out STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
+        RingBufferDataOut        : out STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
         RingBufferAddress        : in  STD_LOGIC_VECTOR(G_ADDR_WIDTH - 1 downto 0);
         --Inputs from AXIS bus of the MAC side
-        axis_rx_tdata            : in  STD_LOGIC_VECTOR(511 downto 0);
+        axis_rx_tdata            : in  STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
         axis_rx_tvalid           : in  STD_LOGIC;
         axis_rx_tuser            : in  STD_LOGIC;
-        axis_rx_tkeep            : in  STD_LOGIC_VECTOR(63 downto 0);
+        axis_rx_tkeep            : in  STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
         axis_rx_tlast            : in  STD_LOGIC
     );
 end entity macifudpreceiver;
@@ -347,7 +349,7 @@ begin
                                 lPacketData(303 downto 288) <= lSourceUDPPort;
                                 lPacketData(319 downto 304) <= lUDPDataStreamLength;
                                 lPacketData(335 downto 320) <= lUDPCheckSum;
-                                lPacketData(511 downto 336) <= axis_rx_tdata(511 downto 336);
+                                lPacketData(G_DATA_WIDTH - 1 downto 336) <= axis_rx_tdata(G_DATA_WIDTH - 1 downto 336);
                             else
                                 -- This is other bytes
                                 -- Pass all data
@@ -373,13 +375,13 @@ begin
                                 --
                                 lPacketAddressCounter          <= (others => '0');
                                 lPacketByteEnable(0)           <= '1';
-                                lPacketByteEnable(63 downto 1) <= axis_rx_tkeep(63 downto 1);
+                                lPacketByteEnable((G_DATA_WIDTH / 8) - 1 downto 1) <= axis_rx_tkeep((G_DATA_WIDTH / 8) - 1 downto 1);
                             else
                                 -- This is a longer than 64 byte packet
                                 lInPacket                      <= '1';
                                 -- tkeep(0) is always 1 when writing data is valid 
                                 lPacketByteEnable(0)           <= '0';
-                                lPacketByteEnable(63 downto 1) <= axis_rx_tkeep(63 downto 1);
+                                lPacketByteEnable((G_DATA_WIDTH / 8) - 1 downto 1) <= axis_rx_tkeep((G_DATA_WIDTH / 8) - 1 downto 1);
                                 if (axis_rx_tvalid = '1') then
                                     lPacketAddressCounter <= unsigned(lPacketAddressCounter) + 1;
                                 end if;

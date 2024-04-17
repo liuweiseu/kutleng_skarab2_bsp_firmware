@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 -- Company          : Kutleng Dynamic Electronics Systems (Pty) Ltd            -
--- Engineer         : Benjamin Hector Hlophe                                   -
+-- Engineer         : Benjamin Hector Hlophe, Wei Liu                          -
 --                                                                             -
 -- Design Name      : CASPER BSP                                               -
 -- Module Name      : cpuethernetmacif - rtl                                   -
@@ -11,6 +11,7 @@
 --                    from the CPU interface.It uses YX and RX 2K ringbuffers. -
 -- Dependencies     : cpumacifudpsender,macifudpreceiver                       -
 -- Revision History : V1.0 - Initial design                                    -
+--                    V1.1 - Modified the module to support 400G design        -
 --------------------------------------------------------------------------------
 
 library ieee;
@@ -89,7 +90,7 @@ architecture rtl of cpuethernetmacif is
     component cpumacifudpsender is
         generic(
             G_SLOT_WIDTH      : natural := 4;
-            G_AXIS_DATA_WIDTH : natural := 512;
+            G_AXIS_DATA_WIDTH : natural := 1024;
             -- The address width is log2(2048/(512/8))=5 bits wide
             G_ADDR_WIDTH      : natural := 5
         );
@@ -131,7 +132,7 @@ architecture rtl of cpuethernetmacif is
     component cpumacifudpreceiver is
         generic(
             G_SLOT_WIDTH         : natural := 4;
-            G_AXIS_DATA_WIDTH    : natural := 512;
+            G_AXIS_DATA_WIDTH    : natural := 1024;
             -- The address width is log2(2048/8))=11 bits wide
             G_ADDR_WIDTH         : natural := 11
         );

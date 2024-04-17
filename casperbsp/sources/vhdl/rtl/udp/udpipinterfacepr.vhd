@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 -- Company          : Kutleng Dynamic Electronics Systems (Pty) Ltd            -
--- Engineer         : Benjamin Hector Hlophe                                   -
+-- Engineer         : Benjamin Hector Hlophe, Wei Liu                          -
 --                                                                             -
 -- Design Name      : CASPER BSP                                               -
 -- Module Name      : udpipinterfacepr - rtl                                   -
@@ -16,7 +16,11 @@
 -- Dependencies     : cpuethernetmacif,arpcache,udpstreamingapps               -
 --                    prconfigcontroller,axisthreeportfabricmultiplexer        -
 --                    axistwoportfabricmultiplexer                             -
--- Revision History : V1.0 - Initial design                                    -
+-- Revision History : V1.0 - Initial design   
+--                    V1.1 - Modified the module to support 400G design.       -
+--                                                                             -
+-- TODO: (1) G_INCLUDE_ICAP = true is not supported for 400g so far            -
+--       (2) G_INCLUDE_HARDWARE_ARP = true is not supported for 400g so far    -                                          
 --------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
@@ -37,12 +41,14 @@ entity udpipinterfacepr is
         G_PR_SERVER_PORT             : natural range 0 to ((2**16) - 1) := 5
     );
     port(
-        -- Axis clock is the Ethernet module clock running at 322.625MHz
+        -- Axis clock is the Ethernet module clock running at 390.625MHz
         axis_clk                                     : in  STD_LOGIC;
         -- Aximm clock is the AXI Lite MM clock for the gmac register interface
-        -- Usually 50MHz 
+        -- It's 100MHz on the VPK180 board
         aximm_clk                                    : in  STD_LOGIC;
         -- ICAP is the 125MHz ICAP clock used for PR
+        -- TODO: Check if we need the icap_clk
+        -- It looks like we don't use PR for 100g/400g, so we may not need this clock.
         icap_clk                                     : in  STD_LOGIC;
         -- Axis reset is the global synchronous reset to the highest clock
         axis_reset                                   : in  STD_LOGIC;
@@ -52,6 +58,8 @@ entity udpipinterfacepr is
         -- memory map, this core has mac & phy registers, arp cache and also  --
         -- cpu transmit and receive buffers                                   --
         ------------------------------------------------------------------------
+        -- TODO: Is it a good idea to expose the register interface to the user?
+        -- Maybe we should expose an AXI Lite interface here...
         aximm_gmac_reg_phy_control_h                 : in  STD_LOGIC_VECTOR(31 downto 0);
         aximm_gmac_reg_phy_control_l                 : in  STD_LOGIC_VECTOR(31 downto 0);
         aximm_gmac_reg_mac_address                   : in  STD_LOGIC_VECTOR(47 downto 0);
@@ -200,10 +208,11 @@ entity udpipinterfacepr is
 end entity udpipinterfacepr;
 
 architecture rtl of udpipinterfacepr is
+
     component cpuethernetmacif is
         generic(
             G_SLOT_WIDTH               : natural := 4;
-            G_AXIS_DATA_WIDTH          : natural := 512;
+            G_AXIS_DATA_WIDTH          : natural := 1024;
             G_CPU_TX_DATA_BUFFER_ASIZE : natural := 13;
             G_CPU_RX_DATA_BUFFER_ASIZE : natural := 13
         );
@@ -267,6 +276,8 @@ architecture rtl of udpipinterfacepr is
             axis_rx_tlast                                : in  STD_LOGIC
         );
     end component cpuethernetmacif;
+    
+    -- This module is not necessary for 400g design
     component arpmodule is
         generic(
             G_SLOT_WIDTH : natural := 4
@@ -292,6 +303,7 @@ architecture rtl of udpipinterfacepr is
             axis_tx_tlast     : out STD_LOGIC
         );
     end component arpmodule;
+
     component arpcache is
         generic(
             G_WRITE_DATA_WIDTH : natural range 32 to 64 := 32;
@@ -314,9 +326,12 @@ architecture rtl of udpipinterfacepr is
             ARPReadAddress     : in  STD_LOGIC_VECTOR((G_NUM_CACHE_BLOCKS * (G_ARP_CACHE_ASIZE - 1)) - 1 downto 0)
         );
     end component arpcache;
+
+    -- We have to modify this module, as it's the most important module for generating UDP packets.
+    -- We should keep the interface identical to the 100g design, and only change the DATA_WIDTH.
     component udpstreamingapps is
         generic(
-            G_AXIS_DATA_WIDTH            : natural              := 512;
+            G_AXIS_DATA_WIDTH            : natural              := 1024;
             G_SLOT_WIDTH                 : natural              := 4;
             -- Number of UDP Streaming Data Server Modules 
             G_NUM_STREAMING_DATA_SERVERS : natural range 1 to 4 := 1;
@@ -399,6 +414,7 @@ architecture rtl of udpipinterfacepr is
         );
     end component udpstreamingapps;
 
+    -- TODO: check if this module is not necessary for 400g design or not
     component prconfigcontroller is
         generic(
             G_SLOT_WIDTH      : natural                          := 4;
@@ -443,93 +459,95 @@ architecture rtl of udpipinterfacepr is
         );
     end component prconfigcontroller;
 
+    -- TODO: check if this module is not necessary for 400g design or not
     component axisfourportfabricmultiplexer is
-        generic(
-            G_MAX_PACKET_BLOCKS_SIZE : natural := 64;
-            G_PRIORITY_WIDTH         : natural := 4;
-            G_DATA_WIDTH             : natural := 8
-        );
-        port(
-            axis_clk            : in  STD_LOGIC;
-            axis_reset          : in  STD_LOGIC;
-            --Inputs from AXIS bus of the MAC side
-            --Outputs to AXIS bus MAC side 
-            axis_tx_tdata       : out STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
-            axis_tx_tvalid      : out STD_LOGIC;
-            axis_tx_tready      : in  STD_LOGIC;
-            axis_tx_tkeep       : out STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
-            axis_tx_tlast       : out STD_LOGIC;
-            axis_tx_tuser       : out STD_LOGIC;
-            -- Port 1
-            axis_rx_tpriority_1 : in  STD_LOGIC_VECTOR(G_PRIORITY_WIDTH - 1 downto 0);
-            axis_rx_tdata_1     : in  STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
-            axis_rx_tvalid_1    : in  STD_LOGIC;
-            axis_rx_tready_1    : out STD_LOGIC;
-            axis_rx_tkeep_1     : in  STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
-            axis_rx_tlast_1     : in  STD_LOGIC;
-            -- Port 2
-            axis_rx_tpriority_2 : in  STD_LOGIC_VECTOR(G_PRIORITY_WIDTH - 1 downto 0);
-            axis_rx_tdata_2     : in  STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
-            axis_rx_tvalid_2    : in  STD_LOGIC;
-            axis_rx_tready_2    : out STD_LOGIC;
-            axis_rx_tkeep_2     : in  STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
-            axis_rx_tlast_2     : in  STD_LOGIC;
-            -- Port 3
-            axis_rx_tpriority_3 : in  STD_LOGIC_VECTOR(G_PRIORITY_WIDTH - 1 downto 0);
-            axis_rx_tdata_3     : in  STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
-            axis_rx_tvalid_3    : in  STD_LOGIC;
-            axis_rx_tready_3    : out STD_LOGIC;
-            axis_rx_tkeep_3     : in  STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
-            axis_rx_tlast_3     : in  STD_LOGIC;
-            -- Port 4
-            axis_rx_tpriority_4 : in  STD_LOGIC_VECTOR(G_PRIORITY_WIDTH - 1 downto 0);
-            axis_rx_tdata_4     : in  STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
-            axis_rx_tvalid_4    : in  STD_LOGIC;
-            axis_rx_tready_4    : out STD_LOGIC;
-            axis_rx_tkeep_4     : in  STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
-            axis_rx_tlast_4     : in  STD_LOGIC
-        );
+      generic(
+          G_MAX_PACKET_BLOCKS_SIZE : natural := 64;
+          G_PRIORITY_WIDTH         : natural := 4;
+          G_DATA_WIDTH             : natural := 8
+      );
+      port(
+          axis_clk            : in  STD_LOGIC;
+          axis_reset          : in  STD_LOGIC;
+          --Inputs from AXIS bus of the MAC side
+          --Outputs to AXIS bus MAC side 
+          axis_tx_tdata       : out STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
+          axis_tx_tvalid      : out STD_LOGIC;
+          axis_tx_tready      : in  STD_LOGIC;
+          axis_tx_tkeep       : out STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
+          axis_tx_tlast       : out STD_LOGIC;
+          axis_tx_tuser       : out STD_LOGIC;
+          -- Port 1
+          axis_rx_tpriority_1 : in  STD_LOGIC_VECTOR(G_PRIORITY_WIDTH - 1 downto 0);
+          axis_rx_tdata_1     : in  STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
+          axis_rx_tvalid_1    : in  STD_LOGIC;
+          axis_rx_tready_1    : out STD_LOGIC;
+          axis_rx_tkeep_1     : in  STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
+          axis_rx_tlast_1     : in  STD_LOGIC;
+          -- Port 2
+          axis_rx_tpriority_2 : in  STD_LOGIC_VECTOR(G_PRIORITY_WIDTH - 1 downto 0);
+          axis_rx_tdata_2     : in  STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
+          axis_rx_tvalid_2    : in  STD_LOGIC;
+          axis_rx_tready_2    : out STD_LOGIC;
+          axis_rx_tkeep_2     : in  STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
+          axis_rx_tlast_2     : in  STD_LOGIC;
+          -- Port 3
+          axis_rx_tpriority_3 : in  STD_LOGIC_VECTOR(G_PRIORITY_WIDTH - 1 downto 0);
+          axis_rx_tdata_3     : in  STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
+          axis_rx_tvalid_3    : in  STD_LOGIC;
+          axis_rx_tready_3    : out STD_LOGIC;
+          axis_rx_tkeep_3     : in  STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
+          axis_rx_tlast_3     : in  STD_LOGIC;
+          -- Port 4
+          axis_rx_tpriority_4 : in  STD_LOGIC_VECTOR(G_PRIORITY_WIDTH - 1 downto 0);
+          axis_rx_tdata_4     : in  STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
+          axis_rx_tvalid_4    : in  STD_LOGIC;
+          axis_rx_tready_4    : out STD_LOGIC;
+          axis_rx_tkeep_4     : in  STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
+          axis_rx_tlast_4     : in  STD_LOGIC
+      );
     end component axisfourportfabricmultiplexer;
-
+    
+    -- TODO: check if this module is not necessary for 400g design or not
     component axisthreeportfabricmultiplexer is
-        generic(
-            G_MAX_PACKET_BLOCKS_SIZE : natural := 64;
-            G_PRIORITY_WIDTH         : natural := 4;
-            G_DATA_WIDTH             : natural := 8
-        );
-        port(
-            axis_clk            : in  STD_LOGIC;
-            axis_reset          : in  STD_LOGIC;
-            --Inputs from AXIS bus of the MAC side
-            --Outputs to AXIS bus MAC side 
-            axis_tx_tdata       : out STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
-            axis_tx_tvalid      : out STD_LOGIC;
-            axis_tx_tready      : in  STD_LOGIC;
-            axis_tx_tkeep       : out STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
-            axis_tx_tlast       : out STD_LOGIC;
-            axis_tx_tuser       : out STD_LOGIC;
-            -- Port 1
-            axis_rx_tpriority_1 : in  STD_LOGIC_VECTOR(G_PRIORITY_WIDTH - 1 downto 0);
-            axis_rx_tdata_1     : in  STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
-            axis_rx_tvalid_1    : in  STD_LOGIC;
-            axis_rx_tready_1    : out STD_LOGIC;
-            axis_rx_tkeep_1     : in  STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
-            axis_rx_tlast_1     : in  STD_LOGIC;
-            -- Port 2
-            axis_rx_tpriority_2 : in  STD_LOGIC_VECTOR(G_PRIORITY_WIDTH - 1 downto 0);
-            axis_rx_tdata_2     : in  STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
-            axis_rx_tvalid_2    : in  STD_LOGIC;
-            axis_rx_tready_2    : out STD_LOGIC;
-            axis_rx_tkeep_2     : in  STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
-            axis_rx_tlast_2     : in  STD_LOGIC;
-            -- Port 3
-            axis_rx_tpriority_3 : in  STD_LOGIC_VECTOR(G_PRIORITY_WIDTH - 1 downto 0);
-            axis_rx_tdata_3     : in  STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
-            axis_rx_tvalid_3    : in  STD_LOGIC;
-            axis_rx_tready_3    : out STD_LOGIC;
-            axis_rx_tkeep_3     : in  STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
-            axis_rx_tlast_3     : in  STD_LOGIC
-        );
+      generic(
+          G_MAX_PACKET_BLOCKS_SIZE : natural := 64;
+          G_PRIORITY_WIDTH         : natural := 4;
+          G_DATA_WIDTH             : natural := 8
+      );
+      port(
+          axis_clk            : in  STD_LOGIC;
+          axis_reset          : in  STD_LOGIC;
+          --Inputs from AXIS bus of the MAC side
+          --Outputs to AXIS bus MAC side 
+          axis_tx_tdata       : out STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
+          axis_tx_tvalid      : out STD_LOGIC;
+          axis_tx_tready      : in  STD_LOGIC;
+          axis_tx_tkeep       : out STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
+          axis_tx_tlast       : out STD_LOGIC;
+          axis_tx_tuser       : out STD_LOGIC;
+          -- Port 1
+          axis_rx_tpriority_1 : in  STD_LOGIC_VECTOR(G_PRIORITY_WIDTH - 1 downto 0);
+          axis_rx_tdata_1     : in  STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
+          axis_rx_tvalid_1    : in  STD_LOGIC;
+          axis_rx_tready_1    : out STD_LOGIC;
+          axis_rx_tkeep_1     : in  STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
+          axis_rx_tlast_1     : in  STD_LOGIC;
+          -- Port 2
+          axis_rx_tpriority_2 : in  STD_LOGIC_VECTOR(G_PRIORITY_WIDTH - 1 downto 0);
+          axis_rx_tdata_2     : in  STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
+          axis_rx_tvalid_2    : in  STD_LOGIC;
+          axis_rx_tready_2    : out STD_LOGIC;
+          axis_rx_tkeep_2     : in  STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
+          axis_rx_tlast_2     : in  STD_LOGIC;
+          -- Port 3
+          axis_rx_tpriority_3 : in  STD_LOGIC_VECTOR(G_PRIORITY_WIDTH - 1 downto 0);
+          axis_rx_tdata_3     : in  STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
+          axis_rx_tvalid_3    : in  STD_LOGIC;
+          axis_rx_tready_3    : out STD_LOGIC;
+          axis_rx_tkeep_3     : in  STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
+          axis_rx_tlast_3     : in  STD_LOGIC
+      );
     end component axisthreeportfabricmultiplexer;
 
     component axistwoportfabricmultiplexer is
@@ -565,23 +583,24 @@ architecture rtl of udpipinterfacepr is
             axis_rx_tlast_2     : in  STD_LOGIC
         );
     end component axistwoportfabricmultiplexer;
-
+    
+    -- TODO: check if this module is not necessary for 400g design or not
     component icapdecoupler is
-        port(
-            axis_clk        : in  STD_LOGIC;
-            axis_reset      : in  STD_LOGIC;
-            axis_prog_full  : out STD_LOGIC;
-            axis_prog_empty : out STD_LOGIC;
-            axis_data_count : out std_logic_vector(13 downto 0);
-            ICAPClk125MHz   : in  STD_LOGIC;
-            ICAP_AVAIL      : out STD_LOGIC;
-            ICAP_DataOut    : out STD_LOGIC_VECTOR(31 downto 0);
-            ICAP_PRDONE     : out STD_LOGIC;
-            ICAP_PRERROR    : out STD_LOGIC;
-            ICAP_CSIB       : in  STD_LOGIC;
-            ICAP_DataIn     : in  STD_LOGIC_VECTOR(31 downto 0);
-            ICAP_RDWRB      : in  STD_LOGIC
-        );
+      port(
+          axis_clk        : in  STD_LOGIC;
+          axis_reset      : in  STD_LOGIC;
+          axis_prog_full  : out STD_LOGIC;
+          axis_prog_empty : out STD_LOGIC;
+          axis_data_count : out std_logic_vector(13 downto 0);
+          ICAPClk125MHz   : in  STD_LOGIC;
+          ICAP_AVAIL      : out STD_LOGIC;
+          ICAP_DataOut    : out STD_LOGIC_VECTOR(31 downto 0);
+          ICAP_PRDONE     : out STD_LOGIC;
+          ICAP_PRERROR    : out STD_LOGIC;
+          ICAP_CSIB       : in  STD_LOGIC;
+          ICAP_DataIn     : in  STD_LOGIC_VECTOR(31 downto 0);
+          ICAP_RDWRB      : in  STD_LOGIC
+      );
     end component icapdecoupler;
 
     constant C_MAX_PACKET_BLOCKS_SIZE : natural := 256;
@@ -635,26 +654,6 @@ architecture rtl of udpipinterfacepr is
     signal ICAP_RDWRB                      : std_logic;
     signal ICAP_DataOut                    : std_logic_vector(31 downto 0);
     signal ICAP_DataIn                     : std_logic_vector(31 downto 0);
---    component axis_ila_server is
---        port(
---            clk     : IN STD_LOGIC;
---            probe0  : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
---            probe1  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
---            probe2  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
---            probe3  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
---            probe4  : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
---            probe5  : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
---            probe6  : IN STD_LOGIC_VECTOR(63 DOWNTO 0);
---            probe7  : IN STD_LOGIC_VECTOR(511 DOWNTO 0);
---            probe8  : IN STD_LOGIC_VECTOR(4 DOWNTO 0);
---            probe9  : IN STD_LOGIC_VECTOR(3 DOWNTO 0);
---            probe10 : IN STD_LOGIC_VECTOR(511 DOWNTO 0);
---            probe11 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
---            probe12 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
---            probe13 : IN STD_LOGIC_VECTOR(63 DOWNTO 0);
---            probe14 : IN STD_LOGIC_VECTOR(0 DOWNTO 0)
---        );
---    end component axis_ila_server;
 
     signal laxis_tx_tdata  : STD_LOGIC_VECTOR(G_AXIS_DATA_WIDTH - 1 downto 0);
     signal laxis_tx_tvalid : STD_LOGIC;
@@ -830,6 +829,7 @@ begin
             axis_rx_tlast                                => axis_rx_tlast
         );
 
+    -- TODO: The PRCFGi modules are not tested in 400g design, so the bus width my not be correct.
     PRCFGi : if G_INCLUDE_ICAP = true generate
     begin
         PRDATAApp_i : prconfigcontroller
@@ -1039,7 +1039,8 @@ begin
                     axis_rx_tlast_2     => axis_tx_tlast_1_udp
                 );
         end generate;
-
+        
+        -- TODO: HWARPi module is not tested in 400g design, so the bus width my not be correct.
         HWARPi : if G_INCLUDE_HARDWARE_ARP = true generate
         begin
             ARP1_i : arpmodule
@@ -1104,27 +1105,6 @@ begin
                     axis_rx_tlast_3     => axis_tx_tlast_1_arp
                 );
         end generate;
-
     end generate;
 
---    ILAMUXAPSS_i : axis_ila_server
---        port map(
---            clk                => axis_clk,
---            probe0             => axis_tx_tpriority_1_cpu,
---            probe1(0)          => axis_tx_tready,
---            probe2(0)          => laxis_tx_tuser,
---            probe3(0)          => laxis_tx_tlast,
---            probe4             => axis_tx_tpriority_1_arp,
---            probe5(0)          => laxis_tx_tvalid,
---            probe6             => laxis_tx_tkeep,
---            probe7             => laxis_tx_tdata,
---            probe8(4)          => axis_tx_tpriority_1_pr(3),
---            probe8(3 downto 0) => axis_tx_tpriority_1_pr,
---            probe9             => axis_tx_tpriority_1_udp,
---            probe10            => axis_tx_tdata_1_udp,
---            probe11(0)         => axis_tx_tvalid_1_udp,
---            probe12(0)         => axis_tx_tready_1_udp,
---            probe13            => axis_tx_tkeep_1_udp,
---            probe14(0)         => axis_tx_tlast_1_udp
---        );
 end architecture rtl;

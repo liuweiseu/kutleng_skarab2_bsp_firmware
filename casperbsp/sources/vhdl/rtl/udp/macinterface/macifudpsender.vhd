@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 -- Company          : Kutleng Dynamic Electronics Systems (Pty) Ltd            -
--- Engineer         : Benjamin Hector Hlophe                                   -
+-- Engineer         : Benjamin Hector Hlophe, Wei Liu                          -
 --                                                                             -
 -- Design Name      : CASPER BSP                                               -
 -- Module Name      : macifudpsender - rtl                                     -
@@ -15,6 +15,7 @@
 --                                                                             -
 -- Dependencies     : N/A                                                      -
 -- Revision History : V1.0 - Initial design                                    -
+--                    V1.1 - Added support for 400G Ethernet                   -
 --------------------------------------------------------------------------------
 
 library ieee;
@@ -26,7 +27,8 @@ entity macifudpsender is
         G_SLOT_WIDTH : natural := 4;
         --G_UDP_SERVER_PORT : natural range 0 to ((2**16) - 1) := 5;
         -- The address width is log2(2048/(512/8))=5 bits wide
-        G_ADDR_WIDTH : natural := 5
+        G_ADDR_WIDTH : natural := 5;
+        G_DATA_WIDTH : natural := 512
     );
     port(
         axis_clk                 : in  STD_LOGIC;
@@ -44,21 +46,21 @@ entity macifudpsender is
         RingBufferDataRead       : out STD_LOGIC;
         -- Enable[0] is a special bit (we assume always 1 when packet is valid)
         -- we use it to save TLAST
-        RingBufferDataEnable     : in  STD_LOGIC_VECTOR(63 downto 0);
-        RingBufferDataIn         : in  STD_LOGIC_VECTOR(511 downto 0);
+        RingBufferDataEnable     : in  STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
+        RingBufferDataIn         : in  STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
         RingBufferAddress        : out STD_LOGIC_VECTOR(G_ADDR_WIDTH - 1 downto 0);
         --Inputs from AXIS bus of the MAC side
         --Outputs to AXIS bus MAC side 
         axis_tx_tpriority        : out STD_LOGIC_VECTOR(G_SLOT_WIDTH - 1 downto 0);
-        axis_tx_tdata            : out STD_LOGIC_VECTOR(511 downto 0);
+        axis_tx_tdata            : out STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
         axis_tx_tvalid           : out STD_LOGIC;
         axis_tx_tready           : in  STD_LOGIC;
-        axis_tx_tkeep            : out STD_LOGIC_VECTOR(63 downto 0);
+        axis_tx_tkeep            : out STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
         axis_tx_tlast            : out STD_LOGIC
     );
 end entity macifudpsender;
 
-architecture rtl of macifudpsender is
+architecture rtl of macifudpsender400g is
 
     type AxisUDPSenderSM_t is (
         InitialiseSt,                   -- On the reset state
@@ -153,7 +155,7 @@ begin
                         if ((axis_tx_tready = '1') and (lpready = '1'))then
                             ltvalid                    <= '1';
                             axis_tx_tdata              <= RingBufferDataIn;
-                            axis_tx_tkeep(63 downto 1) <= RingBufferDataEnable(63 downto 1);
+                            axis_tx_tkeep((G_DATA_WIDTH / 8) - 1 downto 1) <= RingBufferDataEnable((G_DATA_WIDTH / 8) - 1 downto 1);
                             lRingBufferAddress         <= lRingBufferAddress + 1;
 
                             if (RingBufferDataEnable(0) = '1') then

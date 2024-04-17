@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 -- Company          : Kutleng Dynamic Electronics Systems (Pty) Ltd            -
--- Engineer         : Benjamin Hector Hlophe                                   -
+-- Engineer         : Benjamin Hector Hlophe, Wei Liu                          -
 --                                                                             -
 -- Design Name      : CASPER BSP                                               -
 -- Module Name      : udpstreamingapps - rtl                                   -
@@ -11,6 +11,7 @@
 --                                                                             -
 -- Dependencies     : udpstreamingapp,axisfabricmultiplexer                    -
 -- Revision History : V1.0 - Initial design                                    -
+--                    V1.1 - Added support for 400G Ethernet                   -
 --------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
@@ -26,7 +27,7 @@ entity udpstreamingapps is
         G_ARP_DATA_WIDTH             : natural              := 32
     );
     port(
-        -- Axis clock is the Ethernet module clock running at 322.625MHz
+        -- Axis clock is the Ethernet module clock running at 390.625MHz(400G)/322.625MHz(100G)
         axis_clk                                    : in  STD_LOGIC;
         -- Axis reset is the global synchronous reset to the highest clock
         axis_reset                                  : in  STD_LOGIC;
@@ -102,7 +103,8 @@ entity udpstreamingapps is
 end entity udpstreamingapps;
 
 architecture rtl of udpstreamingapps is
-
+    -- This is the most important module for generating UDP packets,
+    -- so we need to modify this module.
     component udpstreamingapp is
         generic(
             G_AXIS_DATA_WIDTH : natural := 512;
@@ -111,7 +113,7 @@ architecture rtl of udpstreamingapps is
             G_ARP_DATA_WIDTH  : natural := 32
         );
         port(
-            -- Axis clock is the Ethernet module clock running at 322.625MHz
+            -- Axis clock is the Ethernet module clock running at 390.625MHz(400G)/322.625MHz(100G)
             axis_clk                                    : in  STD_LOGIC;
             -- Axis reset is the global synchronous reset to the highest clock
             axis_reset                                  : in  STD_LOGIC;
@@ -181,6 +183,10 @@ architecture rtl of udpstreamingapps is
         );
     end component udpstreamingapp;
 
+    -- As the default DATA_WIDTH is 8, and it works well for 100g design with DATA_WIDTH = 512,
+    -- so it should work for 400g design with DATA_WIDTH = 1024.
+    -- One more thing is this moulde is only used when G_NUM_STREAMING_DATA_SERVERS > 1.
+    -- In out application, G_NUM_STREAMING_DATA_SERVERS = 1, so this module is not used.
     component axisfabricmultiplexer is
         generic(
             G_MUX_PORTS              : natural := 4;
@@ -208,6 +214,7 @@ architecture rtl of udpstreamingapps is
             axis_rx_tlast     : in  STD_LOGIC_VECTOR(G_MUX_PORTS - 1 downto 0)
         );
     end component axisfabricmultiplexer;
+    
     type dwordarray_t is array (0 to (G_NUM_STREAMING_DATA_SERVERS - 1)) of std_logic_vector(31 downto 0);
 
     signal gmac_reg_tx_overflow_count    : dwordarray_t;
@@ -263,7 +270,7 @@ begin
                 G_ARP_DATA_WIDTH  => G_ARP_DATA_WIDTH
             )
             port map(
-                -- Axis clock is the Ethernet module clock running at 322.625MHz
+                -- Axis clock is the Ethernet module clock running at 390.625MHz
                 axis_clk                                    => axis_clk,
                 -- Axis reset is the global synchronous reset to the highest clock
                 axis_reset                                  => axis_reset,

@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 -- Company          : Kutleng Dynamic Electronics Systems (Pty) Ltd            -
--- Engineer         : Benjamin Hector Hlophe                                   -
+-- Engineer         : Benjamin Hector Hlophe, Wei Liu                          -
 --                                                                             -
 -- Design Name      : CASPER BSP                                               -
 -- Module Name      : udpdatastripper - rtl                                    -
@@ -11,6 +11,7 @@
 --                                                                             -
 -- Dependencies     : N/A                                                      -
 -- Revision History : V1.0 - Initial design                                    -
+--                    V1.1 - Added support for 400G Ethernet                   -
 --------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
@@ -19,7 +20,8 @@ use ieee.numeric_std.all;
 entity udpdatastripper is
     generic(
         G_SLOT_WIDTH : natural := 4;
-        G_ADDR_WIDTH : natural := 5
+        G_ADDR_WIDTH : natural := 5;
+        G_DATA_WIDTH : natural := 512
     );
     port(
         axis_clk                 : in  STD_LOGIC;
@@ -33,17 +35,17 @@ entity udpdatastripper is
         RecvRingBufferDataRead   : out STD_LOGIC;
         -- Enable[0] is a special bit (we assume always 1 when packet is valid)
         -- we use it to save TLAST
-        RecvRingBufferDataEnable : in  STD_LOGIC_VECTOR(63 downto 0);
-        RecvRingBufferDataOut    : in  STD_LOGIC_VECTOR(511 downto 0);
+        RecvRingBufferDataEnable : in  STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
+        RecvRingBufferDataOut    : in  STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
         RecvRingBufferAddress    : out STD_LOGIC_VECTOR(G_ADDR_WIDTH - 1 downto 0);
         --
         UDPPacketLength          : out STD_LOGIC_VECTOR(15 downto 0);
         --
         axis_tuser               : out STD_LOGIC;
-        axis_tdata               : out STD_LOGIC_VECTOR(511 downto 0);
+        axis_tdata               : out STD_LOGIC_VECTOR(G_DATA_WIDTH - 1 downto 0);
         axis_tvalid              : out STD_LOGIC;
         axis_tready              : in  STD_LOGIC;
-        axis_tkeep               : out STD_LOGIC_VECTOR(63 downto 0);
+        axis_tkeep               : out STD_LOGIC_VECTOR((G_DATA_WIDTH / 8) - 1 downto 0);
         axis_tlast               : out STD_LOGIC
     );
 end entity udpdatastripper;
@@ -186,7 +188,7 @@ begin
                             lRecvRingBufferAddress  <= lRecvRingBufferAddress + 1;
                             --axis_tvalid             <= '1';
                             axis_tdata              <= RecvRingBufferDataOut;
-                            axis_tkeep(63 downto 1) <= RecvRingBufferDataEnable(63 downto 1);
+                            axis_tkeep((G_DATA_WIDTH / 8) - 1 downto 1) <= RecvRingBufferDataEnable((G_DATA_WIDTH / 8) - 1 downto 1);
                             axis_tkeep(0)           <= '1';
 
                             if ((RecvRingBufferDataEnable(0) = '1') or (lRecvRingBufferAddress = C_ADDRESS_MAX)) then

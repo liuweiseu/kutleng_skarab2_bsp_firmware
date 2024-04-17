@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 -- Company          : Kutleng Dynamic Electronics Systems (Pty) Ltd            -
--- Engineer         : Benjamin Hector Hlophe                                   -
+-- Engineer         : Benjamin Hector Hlophe, Jack, Wei                        -
 --                                                                             -
 -- Design Name      : CASPER BSP                                               -
 -- Module Name      : udpdatapacker_jh - rtl                                   -
@@ -11,6 +11,8 @@
 --                                                                             -
 -- Dependencies     : dualportpacketringbuffer                                 -
 -- Revision History : V1.0 - Initial design                                    -
+--                    V1.1 - Improved by Jack for CASPER                       -
+--                    V1.2 - Added support for 400G Ethernet                   -
 --------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
@@ -23,7 +25,7 @@ entity udpdatapacker_jh is
         G_ARP_CACHE_ASIZE : natural := 9;
         G_ARP_DATA_WIDTH  : natural := 32; -- The address width is log2(2048/(512/8))=5 bits wide
         G_ADDR_WIDTH      : natural := 8;  -- log2(Number of words in each circular buffer slot)
-        G_INCLUDE_ILA : boolean := false
+        G_INCLUDE_ILA     : boolean := false
     );
     port(
         axis_clk                       : in  STD_LOGIC;
@@ -65,30 +67,37 @@ entity udpdatapacker_jh is
         axis_tkeep                     : in  STD_LOGIC_VECTOR((G_AXIS_DATA_WIDTH / 8) - 1 downto 0);
         axis_tlast                     : in  STD_LOGIC
     );
-end entity udpdatapacker_jh;
+end entity udpdatapacker;
 
-architecture rtl of udpdatapacker_jh is
-    COMPONENT axis_data_fifo_0
-      PORT (
+architecture rtl of udpdatapacker is
+    -- TODO: create a axis_data_fifo for 400g, whose data width is 1024
+    -- This is an IP core for 100G, but 
+    component axis_data_fifo_400g
+    generic(
+        G_AXIS_DATA_WIDTH : natural := 1024
+    );
+    port (
         s_axis_aresetn : IN STD_LOGIC;
         s_axis_aclk : IN STD_LOGIC;
         s_axis_tvalid : IN STD_LOGIC;
         s_axis_tready : OUT STD_LOGIC;
-        s_axis_tdata : IN STD_LOGIC_VECTOR(511 DOWNTO 0);
-        s_axis_tkeep : IN STD_LOGIC_VECTOR(63 DOWNTO 0);
+        s_axis_tdata : IN STD_LOGIC_VECTOR(G_AXIS_DATA_WIDTH - 1 DOWNTO 0);
+        s_axis_tkeep : IN STD_LOGIC_VECTOR((G_AXIS_DATA_WIDTH / 8) - 1 DOWNTO 0);
         s_axis_tlast : IN STD_LOGIC;
         s_axis_tuser : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
         m_axis_aclk : IN STD_LOGIC;
         m_axis_tvalid : OUT STD_LOGIC;
         m_axis_tready : IN STD_LOGIC;
-        m_axis_tdata : OUT STD_LOGIC_VECTOR(511 DOWNTO 0);
-        m_axis_tkeep : OUT STD_LOGIC_VECTOR(63 DOWNTO 0);
+        m_axis_tdata : OUT STD_LOGIC_VECTOR(G_AXIS_DATA_WIDTH - 1 DOWNTO 0);
+        m_axis_tkeep : OUT STD_LOGIC_VECTOR((G_AXIS_DATA_WIDTH / 8) - 1 DOWNTO 0);
         m_axis_tlast : OUT STD_LOGIC;
         m_axis_tuser : OUT STD_LOGIC_VECTOR(0 DOWNTO 0)
-      );
-    END COMPONENT;
-    
-    component axioffseter
+    );
+    end component axis_data_fifo_400g;
+
+
+    -- TODO: create a axioffseter for 400g, whose data width is 1024
+    component axioffseter400g
     generic(
         G_AXIS_DATA_WIDTH : natural := 512;
         G_OFFSET_BYTES : natural := 42
@@ -111,8 +120,8 @@ architecture rtl of udpdatapacker_jh is
         axim_tlast   : out STD_LOGIC
     );
     end component;
-    
-    COMPONENT dest_address_fifo
+
+    COMPONENT dest_address_fifo_400g
     PORT (
         rst : IN STD_LOGIC;
         wr_clk : IN STD_LOGIC;
@@ -183,7 +192,7 @@ architecture rtl of udpdatapacker_jh is
     constant C_IP_IDENTIFICATION      : std_logic_vector(15 downto 0)               := X"8411"; --X"8413";--X"8411";--X"e298";--
     
     -- Tuples registers
-    signal lPacketData                : std_logic_vector(511 downto 0);
+    signal lPacketData                : std_logic_vector(G_AXIS_DATA_WIDTH - 1 downto 0);
     signal lSourceMACAddress           : std_logic_vector(47 downto 0);
     signal lSourceIPAddress            : std_logic_vector(31 downto 0);
     signal lDestinationIPAddress       : std_logic_vector(31 downto 0);
@@ -239,10 +248,10 @@ architecture rtl of udpdatapacker_jh is
     signal lUDPLength : unsigned(15 downto 0);
     signal lIPLength : unsigned(15 downto 0);
     
-    signal lFirstWord : std_logic_vector(175 downto 0); -- store the first word so it can be written at the end.
+    signal lFirstWord : std_logic_vector(G_AXIS_DATA_WIDTH - 337 downto 0); -- store the first word so it can be written at the end.
 
 
-       function byteswap(DataIn : in unsigned)
+    function byteswap(DataIn : in unsigned)
     return unsigned is
         variable RData48 : unsigned(47 downto 0);
         variable RData32 : unsigned(31 downto 0);
@@ -320,12 +329,13 @@ architecture rtl of udpdatapacker_jh is
         );
     end component vio_packer;
 
+    -- TODO: Check if we need to create a ila with 1024 bits input
     COMPONENT ila_0
     PORT (
       clk : IN STD_LOGIC;
-      probe0 : IN STD_LOGIC_VECTOR(63 DOWNTO 0); 
+      probe0 : IN STD_LOGIC_VECTOR((G_AXIS_DATA_WIDTH / 8) - 1 DOWNTO 0); 
       probe1 : IN STD_LOGIC_VECTOR(0 DOWNTO 0); 
-      probe2 : IN STD_LOGIC_VECTOR(511 DOWNTO 0); 
+      probe2 : IN STD_LOGIC_VECTOR(G_AXIS_DATA_WIDTH - 1 DOWNTO 0); 
       probe3 : IN STD_LOGIC_VECTOR(4 DOWNTO 0); 
       probe4 : IN STD_LOGIC_VECTOR(0 DOWNTO 0); 
       probe5 : IN STD_LOGIC_VECTOR(3 DOWNTO 0); 
@@ -351,7 +361,7 @@ begin
     dest_port_fifo_out <= dest_ip_port_fifo_out(15 downto 0);
 
     
-    data_fifo_i : axis_data_fifo_0
+    data_fifo_i : axis_data_fifo_400g
       PORT MAP (
         s_axis_aresetn => axis_reset_n,
         s_axis_aclk => axis_app_clk,
@@ -371,7 +381,7 @@ begin
         m_axis_tuser(0) => fifo_axis_tuser
       );
       
-  dest_ip_port_fifo_i : dest_address_fifo
+  dest_ip_port_fifo_i : dest_address_fifo_400g
       PORT MAP (
         rst => axis_reset,
         wr_clk => axis_app_clk,
@@ -384,8 +394,12 @@ begin
         empty => open
   );
     
-    udpoffseter_i : axioffseter
-      PORT MAP (
+  udpoffseter_i : axioffseter400g
+    GENERIC MAP (
+        G_AXIS_DATA_WIDTH => G_AXIS_DATA_WIDTH,
+        G_OFFSET_BYTES => 42
+    )
+    PORT MAP (
         axis_clk     => axis_clk,
         axis_rst     => axis_reset,
         axis_tuser   => fifo_axis_tuser,
@@ -421,6 +435,8 @@ begin
             if (axis_reset = '1') then
                 lSlotClear <= '0';
                 lSlotSet   <= '0';
+                lSlotSetBuffer <= (others => '0');   -- added by Wei. Why not reset this buffer?
+                lSlotClearBuffer <= (others => '0'); -- added by Wei. Why not reset this buffer?
             else
                 lSlotSetBuffer   <= lSlotSetBuffer(1) & lPacketSlotSet;
                 lSlotClearBuffer <= lSlotClearBuffer(1) & SenderRingBufferSlotClear;
@@ -469,6 +485,7 @@ begin
         end if;
     end process FilledSlotCounterProc;
 
+    -- It looks like we can reuse this module for the 400g design.
     DSRBi : dualportpacketringbuffer
         generic map(
             G_SLOT_WIDTH => G_SLOT_WIDTH,
@@ -592,7 +609,7 @@ begin
                 case (StateVariable) is
 
                     when InitialiseSt =>
-state_val <= "001";
+                        state_val                 <= "001";
                         -- Wait for packet after initialization
                         StateVariable             <= BeginOrProcessUDPPacketStreamSt;
                         lPacketSlotID             <= (others => '0');
@@ -616,8 +633,8 @@ state_val <= "001";
           --              lIPLength                 <= (others => '0');
 
                     when BeginOrProcessUDPPacketStreamSt =>
-                    state_val <= "010";
-                        lUDPLength                 <= (others => '0');
+                        state_val                 <= "010";
+                        lUDPLength                <= (others => '0');
                         lIPLength                 <= (others => '0');
                         -- Reset the packet address
                         lPacketAddress            <= (others => '0');
@@ -637,12 +654,14 @@ state_val <= "001";
                             lPacketData                    <= offset_axis_tdata;
                             lPacketByteEnable(0)           <= offset_axis_tlast;
                             lPacketSlotType                <= offset_axis_tlast;
-                            lPacketByteEnable(63 downto 1) <= offset_axis_tkeep(63 downto 1);
+                            lPacketByteEnable((G_AXIS_DATA_WIDTH / 8) - 1 downto 1) <= offset_axis_tkeep((G_AXIS_DATA_WIDTH / 8) - 1 downto 1);
                             -- Point to next address when data is valid from source
-                            lUDPLength <= X"001e"; -- Assume this word is 64 bytes, 34 of which are headers on top of UDP
-                            lIPLength <= X"0032"; --Assume this word is 64 bytes, 14 of which are headers on top of IP 
+                            --lUDPLength <= X"001e"; -- Assume this word is 64 bytes, 34 of which are headers on top of UDP
+                            -- lIPLength <= X"0032"; --Assume this word is 64 bytes, 14 of which are headers on top of IP 
+                            lUDPLength <= X"005e"; -- for 400g, it's 128 bytes, not 64 bytes in each seg 
+                            lIPLength <= X"0072"; -- for 400g, it's 128 bytes, not 64 bytes in each seg
                             lPacketAddress <= (others => '0');
-                            lFirstWord <= offset_axis_tdata(511 downto 336); -- store the first word so we can write it again when we have the headers
+                            lFirstWord <= offset_axis_tdata(G_AXIS_DATA_WIDTH - 1 downto 336); -- store the first word so we can write it again when we have the headers
                             StateVariable <= WriteUdpPayloadSt;
                         end if;
                                            
@@ -658,7 +677,7 @@ state_val <= "001";
                         -- Enable(0) is special for TLAST mapping
                         lPacketByteEnable(0)           <= offset_axis_tlast;
                         lPacketSlotType                <= offset_axis_tlast;
-                        lPacketByteEnable(63 downto 1) <= offset_axis_tkeep(63 downto 1);
+                        lPacketByteEnable((G_AXIS_DATA_WIDTH / 8) - 1 downto 1) <= offset_axis_tkeep((G_AXIS_DATA_WIDTH / 8) - 1 downto 1);
                         -- Point to next address when data is valid from source
                         if (offset_axis_tvalid = '1') then
                             -- Assumes that we keep bytes from LSB up to MSB-n
@@ -721,7 +740,7 @@ state_val <= "001";
                         else
                             -- byte swap the mac address as it is created
                             lPacketData(6*8  - 1 downto 0*8) <= lDestinationIPAddress(7 downto 0) & lDestinationIpAddress(15 downto 8) & "0" & lDestinationIpAddress(22 downto 16) & "01011110" & "00000000" & "00000001";
-                            --lPacketData(6*8  - 1 downto 0*8) <= "0000000100000000010111100" & lDestinationIPAddress(22 downto 0);
+                            -- lPacketData(6*8  - 1 downto 0*8) <= "0000000100000000010111100" & lDestinationIPAddress(22 downto 0);
                         end if;
                         lPacketData(12*8 - 1 downto 6*8) <= byteswap(lSourceMACAddress);
                         lPacketData(14*8 - 1 downto 12*8) <= byteswap(C_RESPONSE_ETHER_TYPE);
@@ -739,8 +758,8 @@ state_val <= "001";
                         lPacketData(272 + 4*8  - 1 downto 272 + 2*8) <= byteswap(lDestinationUDPPort);
                         lPacketData(272 + 6*8  - 1 downto 272 + 4*8) <= std_logic_vector(byteswap(lUDPLength));
                         lPacketData(272 + 8*8  - 1 downto 272 + 6*8) <= byteswap(lUDPChecksum);
-                        lPacketData(511 downto 336) <= lFirstWord;
-                        lPacketByteEnable <= X"fffffffffffffffe"; -- write 42 bytes. zero LSB because that's used for end-of-frame
+                        lPacketData(G_AXIS_DATA_WIDTH - 1 downto 336) <= lFirstWord;
+                        lPacketByteEnable <= X"fffffffffffffffffffffffffffffffe"; -- write 42 bytes. zero LSB because that's used for end-of-frame
 
                         StateVariable <= CloseBufferSt;
 
